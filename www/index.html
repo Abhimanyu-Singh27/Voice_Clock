@@ -6,6 +6,56 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>VOICE Clock</title>
   <link rel="stylesheet" href="style.css">
+  <script>
+    // Unconditional Instant Tab Switching
+    window.switchToTab = function(tabId) {
+      if (!tabId) return;
+      var allTabBtns = document.querySelectorAll('.bottom-nav .tab-btn');
+      var allTabContents = document.querySelectorAll('.tab-content');
+
+      for (var i = 0; i < allTabBtns.length; i++) {
+        var b = allTabBtns[i];
+        if (b.getAttribute('data-tab') === tabId) {
+          b.classList.add('active');
+        } else {
+          b.classList.remove('active');
+        }
+      }
+
+      for (var j = 0; j < allTabContents.length; j++) {
+        var c = allTabContents[j];
+        if (c.id === tabId) {
+          c.classList.add('active');
+        } else {
+          c.classList.remove('active');
+        }
+      }
+
+      // Close any active overlay views/modals
+      var overlays = ['settingsView', 'aboutView', 'softwareUpdateView', 'timezoneView', 'optionsDialogModal', 'locationPrivacyModal', 'privacyPolicyModal', 'dateTimeModal'];
+      for (var k = 0; k < overlays.length; k++) {
+        var el = document.getElementById(overlays[k]);
+        if (el) el.classList.add('hidden');
+      }
+
+      // Reset forms to list view
+      if (tabId === 'alarmTab') {
+        var af = document.getElementById('alarmFormView');
+        var ae = document.getElementById('alarmEditView');
+        var al = document.getElementById('alarmListView');
+        if (af) af.classList.add('hidden');
+        if (ae) ae.classList.add('hidden');
+        if (al) al.classList.remove('hidden');
+      } else if (tabId === 'taskTab') {
+        var tf = document.getElementById('taskFormView');
+        var te = document.getElementById('taskEditView');
+        var tl = document.getElementById('taskListView');
+        if (tf) tf.classList.add('hidden');
+        if (te) te.classList.add('hidden');
+        if (tl) tl.classList.remove('hidden');
+      }
+    };
+  </script>
 </head>
 
 <body>
@@ -980,7 +1030,7 @@
 
     <!-- Bottom Navigation -->
     <nav class="bottom-nav">
-      <button class="tab-btn active" data-tab="alarmTab" onclick="window.switchToTab &amp;&amp; window.switchToTab('alarmTab')">
+      <button class="tab-btn active" data-tab="alarmTab" onclick="window.switchToTab('alarmTab')">
         <span class="tab-icon">
           <svg class="tab-icon-svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="13" r="8"></circle>
@@ -991,7 +1041,7 @@
         </span>
         <span class="tab-label" id="tabLabelAlarm">Alarm</span>
       </button>
-      <button class="tab-btn" data-tab="taskTab" onclick="window.switchToTab &amp;&amp; window.switchToTab('taskTab')">
+      <button class="tab-btn" data-tab="taskTab" onclick="window.switchToTab('taskTab')">
         <span class="tab-icon">
           <svg class="tab-icon-svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"></path>
@@ -1002,7 +1052,7 @@
         </span>
         <span class="tab-label" id="tabLabelTasks">Tasks</span>
       </button>
-      <button class="tab-btn" data-tab="voiceTab" onclick="window.switchToTab &amp;&amp; window.switchToTab('voiceTab')">
+      <button class="tab-btn" data-tab="voiceTab" onclick="window.switchToTab('voiceTab')">
         <span class="tab-icon">
           <svg class="tab-icon-svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
@@ -1013,7 +1063,7 @@
         </span>
         <span class="tab-label" id="tabLabelVoice">Voice</span>
       </button>
-      <button class="tab-btn" data-tab="logTab" onclick="window.switchToTab &amp;&amp; window.switchToTab('logTab')">
+      <button class="tab-btn" data-tab="logTab" onclick="window.switchToTab('logTab')">
         <span class="tab-icon">
           <svg class="tab-icon-svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="14" r="8"></circle>
@@ -1118,11 +1168,75 @@
 
   <!-- Notification Popup Box -->
   <div id="notification-box" class="notification-box"></div>
-  <!-- Dynamic OTA Asset Loader (Loads live OTA CSS & JS or falls back to bundled script.js) -->
+
+  <!-- Global Instant Tab Navigation & Cleanup -->
   <script>
-    (function() {
-      // 1. Inject live OTA CSS if updated bundle exists
-      try {
+    // 1. Guaranteed Instant Tab Switching
+    window.switchToTab = function(tabId) {
+      if (!tabId) return;
+      var allTabBtns = document.querySelectorAll('.bottom-nav .tab-btn');
+      var allTabContents = document.querySelectorAll('.tab-content');
+
+      for (var i = 0; i < allTabBtns.length; i++) {
+        var b = allTabBtns[i];
+        if (b.getAttribute('data-tab') === tabId) {
+          b.classList.add('active');
+        } else {
+          b.classList.remove('active');
+        }
+      }
+
+      for (var j = 0; j < allTabContents.length; j++) {
+        var c = allTabContents[j];
+        if (c.id === tabId) {
+          c.classList.add('active');
+        } else {
+          c.classList.remove('active');
+        }
+      }
+
+      // Close any active overlay views/modals
+      var overlays = ['settingsView', 'aboutView', 'softwareUpdateView', 'timezoneView', 'optionsDialogModal', 'locationPrivacyModal', 'privacyPolicyModal', 'dateTimeModal'];
+      for (var k = 0; k < overlays.length; k++) {
+        var el = document.getElementById(overlays[k]);
+        if (el) el.classList.add('hidden');
+      }
+
+      // Reset forms to list view
+      if (tabId === 'alarmTab') {
+        var af = document.getElementById('alarmFormView');
+        var ae = document.getElementById('alarmEditView');
+        var al = document.getElementById('alarmListView');
+        if (af) af.classList.add('hidden');
+        if (ae) ae.classList.add('hidden');
+        if (al) al.classList.remove('hidden');
+      } else if (tabId === 'taskTab') {
+        var tf = document.getElementById('taskFormView');
+        var te = document.getElementById('taskEditView');
+        var tl = document.getElementById('taskListView');
+        if (tf) tf.classList.add('hidden');
+        if (te) te.classList.add('hidden');
+        if (tl) tl.classList.remove('hidden');
+      }
+    };
+
+    // 2. Document event delegation for bottom-nav clicks
+    document.addEventListener('click', function(e) {
+      var btn = e.target.closest('.bottom-nav .tab-btn');
+      if (btn && btn.getAttribute('data-tab')) {
+        e.preventDefault();
+        window.switchToTab(btn.getAttribute('data-tab'));
+      }
+    });
+
+    // 3. Clear any stale OTA data from previous tests so v1.0.0 foundation runs 100% clean
+    try {
+      var otaVer = localStorage.getItem('vc_installed_version');
+      if (!otaVer || otaVer === '1.0.0' || String(otaVer).startsWith('2.')) {
+        localStorage.removeItem('vc_ota_js');
+        localStorage.removeItem('vc_ota_css');
+        localStorage.setItem('vc_installed_version', '1.0.0');
+      } else {
         var otaCss = localStorage.getItem('vc_ota_css');
         if (otaCss && otaCss.length > 20) {
           var s = document.createElement('style');
@@ -1130,32 +1244,12 @@
           s.textContent = otaCss;
           document.head.appendChild(s);
         }
-      } catch (e) {}
-
-      // 2. Check and execute live OTA JS if an updated version was downloaded
-      var otaExecuted = false;
-      try {
-        var otaJs = localStorage.getItem('vc_ota_js');
-        var otaVer = localStorage.getItem('vc_installed_version');
-        if (otaJs && otaJs.length > 100 && otaVer && otaVer !== '1.0.0') {
-          var sc = document.createElement('script');
-          sc.id = 'vc-ota-script';
-          sc.textContent = otaJs;
-          document.body.appendChild(sc);
-          otaExecuted = true;
-        }
-      } catch (e) {
-        console.log('OTA script execution notice:', e);
       }
-
-      // 3. Fallback to bundled script if no OTA update is active
-      if (!otaExecuted) {
-        var defScript = document.createElement('script');
-        defScript.src = 'script.js';
-        document.body.appendChild(defScript);
-      }
-    })();
+    } catch (err) {}
   </script>
+
+  <!-- Synchronous Main Application Script -->
+  <script src="script.js"></script>
 </body>
 
 </html>
