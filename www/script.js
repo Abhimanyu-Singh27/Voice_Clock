@@ -1739,34 +1739,49 @@ function initVoiceClockApp() {
     }
   }
 
+  const GITHUB_OTA_URLS = [
+    'https://abhimanyu-singh27.github.io/Voice_Clock/update-manifest.json',
+    'https://abhimanyu-singh27.github.io/Voice_Clock/www/update-manifest.json',
+    'update-manifest.json'
+  ];
+
   async function checkRemoteUpdateManifest() {
-    try {
-      const res = await fetch('update-manifest.json?t=' + Date.now());
-      if (res.ok) {
-        const manifest = await res.json();
-        if (manifest && manifest.latestVersion) {
-          if (compareVersions(manifest.latestVersion, installedVersion) > 0) {
-            pendingUpdateRelease = {
-              version: manifest.latestVersion,
-              date: manifest.releaseDate || 'Today',
-              type: manifest.type === 'feature' ? 'Feature & Stability Release' : (manifest.type === 'foundation' ? 'Official Foundation Release' : 'Bug Fix & Performance Update'),
-              size: manifest.downloadSize || '~1.5 MB',
-              changelog: manifest.releaseNotes || ['New features and improvements'],
-              scriptUrl: manifest.scriptUrl || null,
-              cssUrl: manifest.cssUrl || null
-            };
-            localStorage.setItem('vc_pending_update', JSON.stringify(pendingUpdateRelease));
-            refreshSettingsUpdateBadge();
-            return pendingUpdateRelease;
-          } else {
-            localStorage.removeItem('vc_pending_update');
-            pendingUpdateRelease = null;
-            refreshSettingsUpdateBadge();
+    for (const url of GITHUB_OTA_URLS) {
+      try {
+        const fetchUrl = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
+        const res = await fetch(fetchUrl);
+        if (res.ok) {
+          const manifest = await res.json();
+          if (manifest && manifest.latestVersion) {
+            if (compareVersions(manifest.latestVersion, installedVersion) > 0) {
+              const base = url.substring(0, url.lastIndexOf('/') + 1);
+              pendingUpdateRelease = {
+                version: manifest.latestVersion,
+                date: manifest.releaseDate || 'Today',
+                date_hi: manifest.releaseDate_hi || manifest.releaseDate || 'आज',
+                type: manifest.type === 'feature' ? 'Feature & Stability Release' : (manifest.type === 'foundation' ? 'Official Foundation Release' : 'Bug Fix & Performance Update'),
+                type_hi: manifest.type_hi || (manifest.type === 'feature' ? 'फीचर और स्टेबिलिटी रिलीज़' : 'बग सुधार और अपडेट'),
+                size: manifest.downloadSize || '~1.5 MB',
+                size_hi: manifest.downloadSize_hi || manifest.downloadSize || '~1.5 MB',
+                changelog: manifest.releaseNotes || ['New features and improvements'],
+                changelog_hi: manifest.releaseNotes_hi || manifest.releaseNotes || ['नई सुविधाएं और सुधार'],
+                scriptUrl: manifest.scriptUrl || (base ? base + 'script.js' : 'script.js'),
+                cssUrl: manifest.cssUrl || (base ? base + 'style.css' : 'style.css')
+              };
+              localStorage.setItem('vc_pending_update', JSON.stringify(pendingUpdateRelease));
+              refreshSettingsUpdateBadge();
+              return pendingUpdateRelease;
+            } else {
+              localStorage.removeItem('vc_pending_update');
+              pendingUpdateRelease = null;
+              refreshSettingsUpdateBadge();
+              return null;
+            }
           }
         }
+      } catch (err) {
+        // try next candidate URL
       }
-    } catch (err) {
-      console.log('Update manifest check notice:', err);
     }
     return null;
   }

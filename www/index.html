@@ -1118,7 +1118,7 @@
 
   <!-- Notification Popup Box -->
   <div id="notification-box" class="notification-box"></div>
-  <!-- Dynamic OTA Asset Loader (Loads live OTA CSS or falls back cleanly) -->
+  <!-- Dynamic OTA Asset Loader (Loads live OTA CSS & JS or falls back to bundled script.js) -->
   <script>
     (function() {
       // 1. Inject live OTA CSS if updated bundle exists
@@ -1132,17 +1132,30 @@
         }
       } catch (e) {}
 
-      // 2. Clean up any stale/broken OTA JS so built-in v1.0.0 foundation runs clean
+      // 2. Check and execute live OTA JS if an updated version was downloaded
+      var otaExecuted = false;
       try {
+        var otaJs = localStorage.getItem('vc_ota_js');
         var otaVer = localStorage.getItem('vc_installed_version');
-        if (!otaVer || otaVer === '1.0.0') {
-          localStorage.removeItem('vc_ota_js');
+        if (otaJs && otaJs.length > 100 && otaVer && otaVer !== '1.0.0') {
+          var sc = document.createElement('script');
+          sc.id = 'vc-ota-script';
+          sc.textContent = otaJs;
+          document.body.appendChild(sc);
+          otaExecuted = true;
         }
-      } catch (e) {}
+      } catch (e) {
+        console.log('OTA script execution notice:', e);
+      }
+
+      // 3. Fallback to bundled script if no OTA update is active
+      if (!otaExecuted) {
+        var defScript = document.createElement('script');
+        defScript.src = 'script.js';
+        document.body.appendChild(defScript);
+      }
     })();
   </script>
-  <!-- Main application script -->
-  <script src="script.js"></script>
 </body>
 
 </html>
