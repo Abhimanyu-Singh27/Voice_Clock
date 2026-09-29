@@ -18,6 +18,14 @@ function initVoiceClockApp() {
     console.log(`[Log ${type}]:`, msg);
   }
 
+  // Top-level stopwatch state variables (hoisted for language & initialization safely)
+  let stopwatchRunning = false;
+  let stopwatchStart = 0;
+  let elapsedTime = 0;
+  let animationFrame = null;
+  let laps = [];
+  let lastLapTime = 0;
+
   // -------------------- POPUP & TOAST --------------------
   function showPopup(msg, type = 'normal') {
     const popup = document.createElement('div');
@@ -4524,12 +4532,13 @@ function initVoiceClockApp() {
     progressCircle.style.strokeDashoffset = circleLength;
   }
 
-  let stopwatchRunning = false;
-  let stopwatchStart = 0;
-  let elapsedTime = 0;
-  let animationFrame = null;
-  let laps = [];
-  let lastLapTime = 0;
+  // Stopwatch state variables are declared at top of initVoiceClockApp
+  stopwatchRunning = false;
+  stopwatchStart = 0;
+  elapsedTime = 0;
+  animationFrame = null;
+  laps = [];
+  lastLapTime = 0;
 
   function formatTime(ms) {
     const totalSec = Math.floor(ms / 1000);
@@ -4570,14 +4579,14 @@ function initVoiceClockApp() {
       lastSwSave = Date.now();
       saveStopwatch();
     }
-    animationFrame = requestAnimationFrame(stopwatchLoop);
+    animationFrame = (window.requestAnimationFrame || window.webkitRequestAnimationFrame || (fn => setTimeout(fn, 16)))(stopwatchLoop);
   }
 
   function startStopwatch() {
     if (stopwatchRunning) return;
     stopwatchRunning = true;
     stopwatchStart = Date.now() - elapsedTime;
-    animationFrame = requestAnimationFrame(stopwatchLoop);
+    animationFrame = (window.requestAnimationFrame || window.webkitRequestAnimationFrame || (fn => setTimeout(fn, 16)))(stopwatchLoop);
 
     const isHi = userSettings.appLanguage === 'hi';
     if (swStartBtn) {
@@ -4592,7 +4601,9 @@ function initVoiceClockApp() {
   function pauseStopwatch() {
     if (!stopwatchRunning) return;
     stopwatchRunning = false;
-    if (animationFrame) cancelAnimationFrame(animationFrame);
+    if (animationFrame) {
+      (window.cancelAnimationFrame || window.webkitCancelAnimationFrame || clearTimeout)(animationFrame);
+    }
 
     const isHi = userSettings.appLanguage === 'hi';
     if (swStartBtn) {
@@ -4606,7 +4617,9 @@ function initVoiceClockApp() {
 
   function resetStopwatch() {
     stopwatchRunning = false;
-    if (animationFrame) cancelAnimationFrame(animationFrame);
+    if (animationFrame) {
+      (window.cancelAnimationFrame || window.webkitCancelAnimationFrame || clearTimeout)(animationFrame);
+    }
 
     elapsedTime = 0;
     stopwatchStart = 0;
