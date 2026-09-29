@@ -1,0 +1,20 @@
+{
+  "latestVersion": "1.0.0",
+  "minSupportedVersion": "1.0.0",
+  "releaseDate": "September 29, 2026",
+  "type": "foundation",
+  "releaseNotes": [
+    "🚀 Official Foundation Release (v1.0.0)",
+    "⏰ Voice & exact time alarms with lockscreen ringing",
+    "📝 Task manager with spoken voice reminders",
+    "🖐️ Interactive slide-to-snooze and dismiss slider",
+    "📅 Repetition days (Sunday to Saturday) with mutual exclusivity",
+    "✏️ Edit alarm and task history directly from cards",
+    "⏱️ Persistent stopwatch history and lap restoration",
+    "🔊 Hardware volume & power button actions",
+    "📳 Repeated timer vibration during alarm ringing",
+    "🌍 World time zones with auto geolocation sync"
+  ],
+  "downloadSize": "Base Release",
+  "bundleVersion": 100
+}

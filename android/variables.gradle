@@ -1,0 +1,14 @@
+rootProject.ext.minSdkVersion = 24
+rootProject.ext.compileSdkVersion = 36
+rootProject.ext.targetSdkVersion = 36
+rootProject.ext.androidxActivityVersion = '1.11.0'
+rootProject.ext.androidxAppCompatVersion = '1.7.1'
+rootProject.ext.androidxCoordinatorLayoutVersion = '1.3.0'
+rootProject.ext.androidxCoreVersion = '1.17.0'
+rootProject.ext.androidxFragmentVersion = '1.8.9'
+rootProject.ext.coreSplashScreenVersion = '1.2.0'
+rootProject.ext.androidxWebkitVersion = '1.14.0'
+rootProject.ext.junitVersion = '4.13.2'
+rootProject.ext.androidxJunitVersion = '1.3.0'
+rootProject.ext.androidxEspressoCoreVersion = '3.7.0'
+rootProject.ext.cordovaAndroidVersion = '14.0.1'

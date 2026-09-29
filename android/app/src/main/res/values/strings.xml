@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">VOICE Clock</string>
+    <string name="title_activity_main">VOICE Clock</string>
+    <string name="package_name">com.voiceclock.vc</string>
+    <string name="custom_url_scheme">com.voiceclock.vc</string>
+</resources>

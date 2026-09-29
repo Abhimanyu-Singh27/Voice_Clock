@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>VOICE Clock</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <div class="wrap">
+
+    <!-- ================= ALARM TAB ================= -->
+    <section class="tab-content active" id="alarmTab">
+      <!-- Starting Screen: History / List View (matches alarm_image.jpeg) -->
+      <div id="alarmListView" class="tab-view-container">
+        <header class="tab-header">
+          <h1 class="voice-clock-brand" id="alarmBrandTitle">Voice Clock</h1>
+          <button class="settings-icon-btn open-settings-btn" title="Settings" aria-label="Settings">
+            <svg class="gear-svg" viewBox="0 0 24 24" width="26" height="26">
+              <path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+            </svg>
+            <span class="settings-update-badge hidden">1</span>
+          </button>
+        </header>
+
+        <!-- List of Alarms -->
+        <div id="alarmsList" class="alarm-history-list"></div>
+
+        <!-- Floating Action Plus Button -->
+        <div class="fab-wrapper">
+          <button id="openAddAlarmBtn" class="fab-plus-btn" aria-label="Add Alarm">
+            <span>+</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Creation / Set Alarm Form (revealed when clicking +) -->
+      <div id="alarmFormView" class="tab-view-container hidden">
+        <header class="tab-header form-header">
+          <button id="backFromAlarmFormBtn" class="back-nav-btn" aria-label="Back">
+            <svg viewBox="0 0 24 24" width="24" height="24">
+              <path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+            </svg>
+          </button>
+          <h2 class="form-title" id="alarmFormTitle">Set Alarm</h2>
+        </header>
+
+        <div class="card form-card">
+          <div class="date-wrapper">
+            <input id="alarmDate" type="datetime-local" class="adjstwdth localdatetime">
+            <span class="fake-placeholder" id="alarmDatePlaceholder">Set Time and Date</span>
+          </div>
+          <textarea placeholder="Alarm Name (Optional)" id="alarmName" class="adjstwdth" rows="2"></textarea>
+          <textarea id="ttsText" placeholder="Alarm message for Text to Speech" class="adjstwdth" rows="2"></textarea>
+          <select id="alarmRepeat">
+            <option value="once">Select Repetition Time (Optional)</option>
+            <option value="once">Once</option>
+            <option value="1 min">Every 1 min</option>
+            <option value="10 min">Every 10 min</option>
+            <option value="1 hr">Every 1 hour</option>
+            <option value="5 hr">Every 5 hours</option>
+            <option value="custom">Custom Interval</option>
+          </select>
+
+          <div id="alarmCustomBox" style="display:none; margin-top:10px;">
+            <input id="alarmCustomHours" type="number" placeholder="Hours" min="0">
+            <input id="alarmCustomMinutes" type="number" placeholder="Minutes (Optional)" min="0">
+          </div>
+          <div class="repeat-days-group" id="alarmRepeatDaysGroup">
+            <label class="repeat-days-label" id="alarmRepeatDaysLabel">Repeat on days:</label>
+            <div class="day-pills-row" id="alarmDayPills">
+              <button type="button" class="day-pill" data-day="0" title="Sunday">S</button>
+              <button type="button" class="day-pill" data-day="1" title="Monday">M</button>
+              <button type="button" class="day-pill" data-day="2" title="Tuesday">T</button>
+              <button type="button" class="day-pill" data-day="3" title="Wednesday">W</button>
+              <button type="button" class="day-pill" data-day="4" title="Thursday">T</button>
+              <button type="button" class="day-pill" data-day="5" title="Friday">F</button>
+              <button type="button" class="day-pill" data-day="6" title="Saturday">S</button>
+            </div>
+            <div class="repeat-days-hint" id="alarmRepeatDaysHint">Select days of the week</div>
+          </div>
+          <select id="mode">
+            <option class="option-bgc adjstwdth" value="tts">Select Mode Of Audio</option>
+            <option class="option-bgc adjstwdth" value="tts">Text to Speech</option>
+            <option class="option-bgc adjstwdth" value="upload">Uploaded Audio</option>
+          </select>
+          <input type="file" id="uploadTune" class="adjstwdth" accept="audio/*" style="display:none;">
+          <button id="setAlarmBtn" class="btn primary-btn">Set Alarm</button>
+        </div>
+      </div>
+
+      <!-- Edit Alarm View (revealed when clicking an alarm card in history) -->
+      <div id="alarmEditView" class="tab-view-container hidden">
+        <header class="tab-header form-header">
+          <button id="backFromAlarmEditBtn" class="back-nav-btn" aria-label="Back">
+            <svg viewBox="0 0 24 24" width="24" height="24">
+              <path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+            </svg>
+          </button>
+          <h2 class="form-title" id="alarmEditTitle">Edit Alarm</h2>
+        </header>
+
+        <div class="card form-card">
+          <div class="date-wrapper">
+            <input id="editAlarmDate" type="datetime-local" class="adjstwdth localdatetime">
+            <span class="fake-placeholder" id="editAlarmDatePlaceholder">Set Time and Date</span>
+          </div>
+          <textarea placeholder="Alarm Name (Optional)" id="editAlarmName" class="adjstwdth" rows="2"></textarea>
+          <textarea id="editTtsText" placeholder="Alarm message for Text to Speech" class="adjstwdth" rows="2"></textarea>
+          
+          <select id="editAlarmRepeat">
+            <option value="once">Once</option>
+            <option value="1 min">Every 1 min</option>
+            <option value="10 min">Every 10 min</option>
+            <option value="1 hr">Every 1 hour</option>
+            <option value="5 hr">Every 5 hours</option>
+            <option value="custom">Custom Interval</option>
+          </select>
+
+          <div id="editAlarmCustomBox" style="display:none; margin-top:10px;">
+            <input id="editAlarmCustomHours" type="number" placeholder="Hours" min="0">
+            <input id="editAlarmCustomMinutes" type="number" placeholder="Minutes (Optional)" min="0">
+          </div>
+
+          <div class="repeat-days-group" id="editAlarmRepeatDaysGroup">
+            <label class="repeat-days-label" id="editAlarmRepeatDaysLabel">Repeat on days:</label>
+            <div class="day-pills-row" id="editAlarmDayPills">
+              <button type="button" class="day-pill" data-day="0" title="Sunday">S</button>
+              <button type="button" class="day-pill" data-day="1" title="Monday">M</button>
+              <button type="button" class="day-pill" data-day="2" title="Tuesday">T</button>
+              <button type="button" class="day-pill" data-day="3" title="Wednesday">W</button>
+              <button type="button" class="day-pill" data-day="4" title="Thursday">T</button>
+              <button type="button" class="day-pill" data-day="5" title="Friday">F</button>
+              <button type="button" class="day-pill" data-day="6" title="Saturday">S</button>
+            </div>
+            <div class="repeat-days-hint" id="editAlarmRepeatDaysHint">Select days of the week</div>
+          </div>
+
+          <select id="editMode">
+            <option class="option-bgc adjstwdth" value="tts">Text to Speech</option>
+            <option class="option-bgc adjstwdth" value="upload">Uploaded Audio</option>
+          </select>
+          <input type="file" id="editUploadTune" class="adjstwdth" accept="audio/*" style="display:none;">
+          
+          <div class="edit-action-row" style="display:flex;gap:10px;margin-top:16px;">
+            <button id="saveEditAlarmBtn" class="btn primary-btn" style="flex:2;">Save Changes</button>
+            <button id="deleteEditAlarmBtn" class="btn danger-btn" style="flex:1;">Delete</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= TASK TAB ================= -->
+    <section class="tab-content" id="taskTab">
+      <!-- Starting Screen: History / List View -->
+      <div id="taskListView" class="tab-view-container">
+        <header class="tab-header">
+          <h1 class="tab-title" id="taskTabTitle">Tasks</h1>
+          <button class="settings-icon-btn open-settings-btn" title="Settings" aria-label="Settings">
+            <svg class="gear-svg" viewBox="0 0 24 24" width="26" height="26">
+              <path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+            </svg>
+            <span class="settings-update-badge hidden">1</span>
+          </button>
+        </header>
+
+        <!-- List of Tasks -->
+        <div id="tasksList" class="alarm-history-list"></div>
+
+        <!-- Floating Action Plus Button -->
+        <div class="fab-wrapper">
+          <button id="openAddTaskBtn" class="fab-plus-btn" aria-label="Add Task">
+            <span>+</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Creation / Add Task Form (revealed when clicking +) -->
+      <div id="taskFormView" class="tab-view-container hidden">
+        <header class="tab-header form-header">
+          <button id="backFromTaskFormBtn" class="back-nav-btn" aria-label="Back">
+            <svg viewBox="0 0 24 24" width="24" height="24">
+              <path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+            </svg>
+          </button>
+          <h2 class="form-title" id="taskFormTitle">Add Task</h2>
+        </header>
+
+        <div class="card form-card">
+          <input id="taskTitle" placeholder="Task Message" class="adjstwdth">
+          <div class="date-wrapper">
+            <input id="taskTime" type="datetime-local" class="adjstwdth">
+            <span class="fake-placeholder" id="taskDatePlaceholder">Set Time and Date</span>
+          </div>
+
+          <select id="taskRepeat">
+            <option class="option-bgc" value="once">Select Repetition Time</option>
+            <option class="option-bgc" value="once">Once</option>
+            <option class="option-bgc" value="1 min">Every 1 min</option>
+            <option class="option-bgc" value="5 min">Every 5 min</option>
+            <option class="option-bgc" value="1 hr">Every 1 hour</option>
+            <option class="option-bgc" value="5 hr">Every 5 hours</option>
+            <option class="option-bgc" value="custom">Custom Time Interval</option>
+          </select>
+
+          <div id="customIntervalBox" style="display:none; margin-top:10px;">
+            <input id="customHours" type="number" placeholder="Hours" min="0">
+            <input id="customMinutes" type="number" placeholder="Minutes (Optional)" min="0">
+          </div>
+
+          <div class="repeat-days-group" id="taskRepeatDaysGroup">
+            <label class="repeat-days-label" id="taskRepeatDaysLabel">Repeat on days:</label>
+            <div class="day-pills-row" id="taskDayPills">
+              <button type="button" class="day-pill" data-day="0" title="Sunday">S</button>
+              <button type="button" class="day-pill" data-day="1" title="Monday">M</button>
+              <button type="button" class="day-pill" data-day="2" title="Tuesday">T</button>
+              <button type="button" class="day-pill" data-day="3" title="Wednesday">W</button>
+              <button type="button" class="day-pill" data-day="4" title="Thursday">T</button>
+              <button type="button" class="day-pill" data-day="5" title="Friday">F</button>
+              <button type="button" class="day-pill" data-day="6" title="Saturday">S</button>
+            </div>
+            <div class="repeat-days-hint" id="taskRepeatDaysHint">Select days of the week</div>
+          </div>
+
+          <button id="addTask" class="btn primary-btn">Add Task</button>
+        </div>
+      </div>
+
+      <!-- Edit Task View (revealed when clicking a task card in history) -->
+      <div id="taskEditView" class="tab-view-container hidden">
+        <header class="tab-header form-header">
+          <button id="backFromTaskEditBtn" class="back-nav-btn" aria-label="Back">
+            <svg viewBox="0 0 24 24" width="24" height="24">
+              <path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+            </svg>
+          </button>
+          <h2 class="form-title" id="taskEditTitle">Edit Task</h2>
+        </header>
+
+        <div class="card form-card">
+          <input id="editTaskTitle" placeholder="Task Message" class="adjstwdth">
+          <div class="date-wrapper">
+            <input id="editTaskTime" type="datetime-local" class="adjstwdth">
+            <span class="fake-placeholder" id="editTaskDatePlaceholder">Set Time and Date</span>
+          </div>
+
+          <select id="editTaskRepeat">
+            <option class="option-bgc" value="once">Once</option>
+            <option class="option-bgc" value="1 min">Every 1 min</option>
+            <option class="option-bgc" value="5 min">Every 5 min</option>
+            <option class="option-bgc" value="1 hr">Every 1 hour</option>
+            <option class="option-bgc" value="5 hr">Every 5 hours</option>
+            <option class="option-bgc" value="custom">Custom Time Interval</option>
+          </select>
+
+          <div id="editCustomIntervalBox" style="display:none; margin-top:10px;">
+            <input id="editCustomHours" type="number" placeholder="Hours" min="0">
+            <input id="editCustomMinutes" type="number" placeholder="Minutes (Optional)" min="0">
+          </div>
+
+          <div class="repeat-days-group" id="editTaskRepeatDaysGroup">
+            <label class="repeat-days-label" id="editTaskRepeatDaysLabel">Repeat on days:</label>
+            <div class="day-pills-row" id="editTaskDayPills">
+              <button type="button" class="day-pill" data-day="0" title="Sunday">S</button>
+              <button type="button" class="day-pill" data-day="1" title="Monday">M</button>
+              <button type="button" class="day-pill" data-day="2" title="Tuesday">T</button>
+              <button type="button" class="day-pill" data-day="3" title="Wednesday">W</button>
+              <button type="button" class="day-pill" data-day="4" title="Thursday">T</button>
+              <button type="button" class="day-pill" data-day="5" title="Friday">F</button>
+              <button type="button" class="day-pill" data-day="6" title="Saturday">S</button>
+            </div>
+            <div class="repeat-days-hint" id="editTaskRepeatDaysHint">Select days of the week</div>
+          </div>
+
+          <div class="edit-action-row" style="display:flex;gap:10px;margin-top:16px;">
+            <button id="saveEditTaskBtn" class="btn primary-btn" style="flex:2;">Save Changes</button>
+            <button id="deleteEditTaskBtn" class="btn danger-btn" style="flex:1;">Delete</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= VOICE TAB ================= -->
+    <section class="tab-content" id="voiceTab">
+      <header class="tab-header">
+        <h1 class="tab-title" id="voiceTabTitle">Voice Command</h1>
+        <button class="settings-icon-btn open-settings-btn" title="Settings" aria-label="Settings">
+          <svg class="gear-svg" viewBox="0 0 24 24" width="26" height="26">
+            <path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+          </svg>
+          <span class="settings-update-badge hidden">1</span>
+        </button>
+      </header>
+
+      <div class="card">
+        <div class="voice-controls-bar">
+          <div class="voice-control-item">
+            <label for="voiceLangSelect" id="voiceLangLabel" class="sub" style="display:block;margin-bottom:6px;">Language:</label>
+            <select id="voiceLangSelect" class="option-bgc">
+              <option value="en-IN" selected>English (India)</option>
+              <option value="en-US">English (US)</option>
+            </select>
+          </div>
+
+          <div class="privacy-security-badge">
+            <svg class="privacy-svg" viewBox="0 0 24 24" width="22" height="22" fill="#10b981">
+              <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
+            </svg>
+            <div class="privacy-text">
+              <strong id="voiceAssistantActiveHeading">Voice Assistant Active (Screen-On)</strong>
+              <p id="voiceAssistantActiveDesc">Speak in English while screen is on. Say "Set alarm at 7 AM" or "Stop alarm".</p>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:20px;text-align:center;">
+          <button id="voiceCmdBtn" class="google-mic-btn" type="button">
+            <div class="google-colors-bar">
+              <span class="bar blue"></span>
+              <span class="bar red"></span>
+              <span class="bar yellow"></span>
+              <span class="bar green"></span>
+            </div>
+            <span id="voiceBtnLabel">Start Voice</span>
+          </button>
+        </div>
+
+        <div id="voiceCmdStatus" class="voice-status-box">Tap the microphone button to give a voice command</div>
+
+        <div class="command-hints">
+          <h4 id="voiceTrySayingHeading" style="margin:20px 0 10px;">Try saying:</h4>
+          <div class="hint-chips" id="voiceHintChips">
+            <span class="hint-chip">"Set alarm at 7:00 AM"</span>
+            <span class="hint-chip">"Set alarm at 8:00 PM for meeting"</span>
+            <span class="hint-chip">"Set alarm at 7:00 AM for study"</span>
+            <span class="hint-chip">"Create task for study at 7:00 PM"</span>
+            <span class="hint-chip">"Remind me to take medicine at 8:30 PM"</span>
+            <span class="hint-chip">"Stop alarm"</span>
+            <span class="hint-chip">"Snooze alarm"</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= STOPWATCH TAB ================= -->
+    <section class="tab-content" id="logTab">
+      <!-- Real-time running clock placed here at the top as requested -->
+      <div class="card stopwatch-clock-card">
+        <div class="time" id="clock">--:--:--</div>
+        <div class="sub" id="date">Loading...</div>
+      </div>
+
+      <header class="tab-header" style="margin-top:8px;">
+        <h2 class="stopwatch-title" style="margin:0; display:flex; align-items:center; gap:8px;">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="14" r="8"></circle>
+            <line x1="12" y1="6" x2="12" y2="2"></line>
+            <path d="M10 2h4"></path>
+            <line x1="12" y1="14" x2="15" y2="11"></line>
+            <path d="M18.5 7.5L20 6"></path>
+          </svg>
+          <span>Stopwatch</span>
+        </h2>
+        <button class="settings-icon-btn open-settings-btn" title="Settings" aria-label="Settings">
+          <svg class="gear-svg" viewBox="0 0 24 24" width="26" height="26">
+            <path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+          </svg>
+          <span class="settings-update-badge hidden">1</span>
+        </button>
+      </header>
+
+      <div class="card">
+        <div class="stopwatch-container">
+          <div class="stopwatch-circle">
+            <svg class="progress-ring" viewBox="0 0 280 280">
+              <circle class="ring-bg" cx="140" cy="140" r="115"></circle>
+              <circle id="progressCircle" class="ring-progress" cx="140" cy="140" r="115"></circle>
+            </svg>
+
+            <div class="stopwatch-time">
+              <div id="swHour">00</div>
+              <span>:</span>
+              <div id="swMinute">00</div>
+              <span>:</span>
+              <div id="swSecond">00</div>
+              <span>.</span>
+              <div id="swMilli">00</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stopwatch Controls -->
+        <div class="stopwatch-controls">
+          <button id="swStartBtn" class="sw-btn start-btn">▶ Start</button>
+          <button id="swPauseBtn" class="sw-btn pause-btn" disabled>⏸ Pause</button>
+          <button id="swLapBtn" class="sw-btn lap-btn" disabled>🏁 Record</button>
+          <button id="swResetBtn" class="sw-btn reset-btn">↺ Reset</button>
+        </div>
+
+        <!-- Lap History -->
+        <div class="lap-section">
+          <div class="lap-header">
+            <span id="lapHeaderLap">Lap</span>
+            <span id="lapHeaderTime">Time</span>
+          </div>
+          <div id="lapContainer" class="lap-container">
+            <div class="lap-empty" id="lapEmptyText">No laps recorded</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SETTINGS PAGE (matching setting_image1 & 2) ================= -->
+    <div id="settingsView" class="settings-page hidden">
+      <header class="settings-header">
+        <button id="closeSettingsBtn" class="back-nav-btn" aria-label="Back">
+          <svg viewBox="0 0 24 24" width="24" height="24">
+            <path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+          </svg>
+        </button>
+        <h2 id="settingsViewTitle">Settings</h2>
+      </header>
+
+      <div class="settings-scroll-content">
+        <!-- Section: General -->
+        <div class="settings-section-title" id="secGeneralTitle">General</div>
+
+        <div class="setting-item clickable" id="settingAppLanguage">
+          <div class="setting-text">
+            <div class="setting-label" id="settingAppLangLabel">App Language</div>
+            <div class="setting-sub" id="settingAppLanguageSub">English</div>
+          </div>
+          <svg class="chevron-svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+            <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
+          </svg>
+        </div>
+
+        <div class="setting-item clickable" id="settingHomeTimeZone">
+          <div class="setting-text">
+            <div class="setting-label" id="settingHomeTzLabel">Home time zone</div>
+            <div class="setting-sub" id="settingHomeTimeZoneSub">(GMT+5:30) Kolkata</div>
+          </div>
+        </div>
+
+        <div class="setting-item clickable" id="settingDateTime">
+          <div class="setting-text">
+            <div class="setting-label" id="settingDateTimeLabel">Change date &amp; time</div>
+            <div class="setting-sub" id="settingDateTimeSub">Device time synchronized</div>
+          </div>
+        </div>
+
+        <!-- Section: Alarms -->
+        <div class="settings-section-title" id="secAlarmsTitle">Alarms</div>
+
+        <div class="setting-item clickable" id="settingSilenceAfter">
+          <div class="setting-text">
+            <div class="setting-label" id="settingSilenceLabel">Silence after</div>
+            <div class="setting-sub" id="settingSilenceAfterSub">1 minute</div>
+          </div>
+        </div>
+
+        <div class="setting-item clickable" id="settingSnoozeDuration">
+          <div class="setting-text">
+            <div class="setting-label" id="settingSnoozeLabel">Snooze length</div>
+            <div class="setting-sub" id="settingSnoozeDurationSub">10 minutes</div>
+          </div>
+        </div>
+
+        <div class="setting-item volume-setting-item">
+          <div class="setting-label" id="settingAlarmVolLabel" style="margin-bottom:8px;">Alarm volume</div>
+          <div class="volume-slider-row">
+            <svg class="volume-bell-svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+              <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"/>
+            </svg>
+            <input type="range" id="settingAlarmVolume" min="0" max="100" value="80" class="setting-slider">
+          </div>
+        </div>
+
+        <div class="setting-item clickable" id="settingGradualVolume">
+          <div class="setting-text">
+            <div class="setting-label" id="settingGradualVolLabel">Gradually increase volume</div>
+            <div class="setting-sub" id="settingGradualVolumeSub">Off</div>
+          </div>
+        </div>
+
+        <div class="setting-item clickable" id="settingVolumeButtonsAction">
+          <div class="setting-text">
+            <div class="setting-label" id="settingVolumeButtonsActionLabel">Volume buttons</div>
+            <div class="setting-sub" id="settingVolumeButtonsActionSub">Remind me later</div>
+          </div>
+        </div>
+
+        <div class="setting-item clickable" id="settingPowerButtonAction">
+          <div class="setting-text">
+            <div class="setting-label" id="settingPowerButtonActionLabel">Power button</div>
+            <div class="setting-sub" id="settingPowerButtonActionSub">Dismiss</div>
+          </div>
+        </div>
+
+        <div class="setting-item toggle-setting-item">
+          <div class="setting-text">
+            <div class="setting-label" id="settingPowerOffLabel">Power-off alarm ringing</div>
+            <div class="setting-sub" id="settingPowerOffSub">After power-off, the device automatically powers on and rings</div>
+          </div>
+          <label class="switch-container">
+            <input type="checkbox" id="settingPowerOffRinging" checked>
+            <span class="slider round"></span>
+          </label>
+        </div>
+
+        <div class="setting-item clickable" id="settingStartWeek">
+          <div class="setting-text">
+            <div class="setting-label" id="settingStartWeekLabel">Start week on</div>
+            <div class="setting-sub" id="settingStartWeekSub">Sunday</div>
+          </div>
+        </div>
+
+        <!-- Section: Timers -->
+        <div class="settings-section-title" id="secTimersTitle">Timers</div>
+
+        <div class="setting-item clickable" id="settingTimerSound">
+          <div class="setting-text">
+            <div class="setting-label" id="settingTimerSoundLabel">Timer sound</div>
+            <div class="setting-sub" id="settingTimerSoundSub">Om Namo Bhagavate Vasudevaya _ Mahavatar Narsimha Ringtone Download - MobCup.Com.Co</div>
+          </div>
+        </div>
+
+        <div class="setting-item toggle-setting-item">
+          <div class="setting-text">
+            <div class="setting-label" id="settingTimerVibrateLabel">Timer vibrate</div>
+          </div>
+          <label class="switch-container">
+            <input type="checkbox" id="settingTimerVibrate">
+            <span class="slider round"></span>
+          </label>
+        </div>
+
+        <!-- Section: Appearance / Theme -->
+        <div class="settings-section-title" id="secAppearanceTitle">Appearance</div>
+
+        <div class="setting-item toggle-setting-item">
+          <div class="setting-text">
+            <div class="setting-label" id="settingThemeLabel">Light Theme</div>
+            <div class="setting-sub" id="settingThemeSub">Switch between Dark and Light mode</div>
+          </div>
+          <label class="switch-container">
+            <input type="checkbox" id="settingThemeToggle">
+            <span class="slider round"></span>
+          </label>
+        </div>
+
+        <!-- Section: About -->
+        <div class="settings-section-title" id="secAboutTitle">About Voice Clock</div>
+
+        <div class="setting-item clickable" id="settingAboutVC">
+          <div class="setting-text">
+            <div class="setting-label" style="display:flex;align-items:center;gap:8px;">
+              <span id="settingAboutVCLabel">About Voice Clock</span>
+              <span id="settingsAboutUpdateBadge" class="about-update-pill hidden">Update 1</span>
+            </div>
+            <div class="setting-sub" id="settingAboutVCSub">Version 1.0.0 • Creator: Ayush Kumar Singh</div>
+          </div>
+          <svg class="chevron-svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+            <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
+          </svg>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ================= ABOUT VOICE CLOCK VIEW ================= -->
+    <div id="aboutView" class="settings-page hidden">
+      <header class="settings-header">
+        <button id="closeAboutBtn" class="back-nav-btn" aria-label="Back">
+          <svg viewBox="0 0 24 24" width="24" height="24">
+            <path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+          </svg>
+        </button>
+        <h2 id="aboutViewTitle">About Voice Clock</h2>
+      </header>
+
+      <div class="settings-scroll-content about-scroll-content">
+        <!-- Hero App Banner -->
+        <div class="about-hero-card">
+          <div class="about-app-icon-wrap">
+            <img src="app_icon.png" class="about-app-img" alt="Voice Clock Icon">
+          </div>
+          <h1 class="about-app-name" id="aboutAppNameTitle">Voice Clock</h1>
+          <p class="about-app-tagline" id="aboutAppTagline">Intelligent AI &amp; Voice-Powered Productivity Clock</p>
+          <div class="about-badge-row">
+            <span id="aboutVersionBadge" class="about-version-badge">v1.0.0</span>
+            <span class="about-release-badge" id="aboutReleaseBadge">Feature Release</span>
+            <span class="about-platform-badge" id="aboutPlatformBadge">Android Native</span>
+          </div>
+        </div>
+
+        <!-- App Details Card -->
+        <div class="about-info-card">
+          <h3 class="about-card-title" id="aboutAppInfoTitle">Application Information</h3>
+          
+          <!-- Clickable App Version Row / Button leading to Software Update Page -->
+          <div class="about-info-row clickable-version-row" id="aboutVersionRowBtn" role="button" tabindex="0" title="Click to open Software Update">
+            <div class="about-version-left">
+              <span class="about-info-label" id="aboutAppVersionLabel">App Version</span>
+              <span class="version-action-hint" id="aboutVersionActionHint">Tap to check software updates ▸</span>
+            </div>
+            <div class="about-version-right">
+              <button class="about-version-btn" id="aboutVersionBtn" type="button" aria-label="Check software updates">
+                <span id="aboutVersionText">1.0.0</span>
+                <span id="aboutVersionNewPill" class="version-new-pill hidden">UPDATE</span>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                  <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="about-info-row">
+            <span class="about-info-label" id="aboutLaunchDateLabel">Date of Launching</span>
+            <span class="about-info-val" id="aboutLaunchDateVal">September 29, 2026</span>
+          </div>
+
+          <div class="about-info-row">
+            <span class="about-info-label" id="aboutLaunchYearLabel">Year of Launching</span>
+            <span class="about-info-val">2026</span>
+          </div>
+
+          <div class="about-info-row">
+            <span class="about-info-label" id="aboutOwnerLabel">Owner &amp; Creator</span>
+            <span class="about-info-val highlight-owner" id="aboutOwnerVal">Ayush Kumar Singh</span>
+          </div>
+
+          <div class="about-info-row">
+            <span class="about-info-label" id="aboutRoleLabel">Role</span>
+            <span class="about-info-val" id="aboutRoleVal">Founder &amp; Lead Architect</span>
+          </div>
+
+          <div class="about-info-row">
+            <span class="about-info-label" id="aboutPkgLabel">Package ID</span>
+            <span class="about-info-val">com.voiceclock.vc</span>
+          </div>
+
+          <div class="about-info-row">
+            <span class="about-info-label" id="aboutSpeechLabel">Speech Engine</span>
+            <span class="about-info-val" id="aboutSpeechVal">100% On-Device English Recognizer</span>
+          </div>
+
+          <div class="about-info-row">
+            <span class="about-info-label" id="aboutPrivacyLabel">Privacy Guarantee</span>
+            <span class="about-info-val green-val" id="aboutPrivacyVal">Zero Cloud Recording (100% Local)</span>
+          </div>
+        </div>
+
+        <!-- Automatic Feature Registry Card -->
+        <div class="about-info-card">
+          <h3 class="about-card-title" id="aboutFeaturesTitle">Registered Features &amp; Version History</h3>
+          <p class="about-card-desc" id="aboutFeaturesDesc">Every added feature automatically increments the feature version counter.</p>
+          <div id="aboutFeatureList" class="about-feature-list">
+            <!-- Dynamically populated from script.js feature registry -->
+          </div>
+        </div>
+
+        <!-- Interactive Actions -->
+        <div class="about-actions-card">
+          <button id="checkForUpdatesBtn" class="about-action-btn" type="button">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+            </svg>
+            <span id="updateBtnText">Check for updates</span>
+          </button>
+          <div id="updateStatusText" class="update-status-msg hidden"></div>
+
+          <button id="openPrivacyPolicyBtn" class="about-action-btn secondary" type="button">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            <span id="privacyPolicyBtnText">Privacy &amp; Security Policy</span>
+          </button>
+        </div>
+
+        <div class="about-footer-text">
+          <p class="about-passion-line" id="aboutPassionLine">Designed and engineered with passion by <span class="passion-red-heart">❤</span></p>
+          <p id="aboutCopyrightLine">&copy; 2026 Voice Clock. All Rights Reserved.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= SOFTWARE UPDATE VIEW ================= -->
+    <div id="softwareUpdateView" class="settings-page hidden">
+      <header class="settings-header">
+        <button id="closeSoftwareUpdateBtn" class="back-nav-btn" aria-label="Back">
+          <svg viewBox="0 0 24 24" width="24" height="24">
+            <path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+          </svg>
+        </button>
+        <h2 id="softwareUpdateViewTitle">Software Update</h2>
+      </header>
+
+      <div class="settings-scroll-content sw-update-scroll-content">
+        <!-- Top Center: App Icon, Name, and Current Version -->
+        <div class="sw-update-top-center">
+          <div class="sw-app-icon-wrap">
+            <img src="app_icon.png" class="sw-app-img" alt="Voice Clock Icon">
+          </div>
+          <h1 class="sw-app-title" id="swAppTitle">Voice Clock</h1>
+          <div class="sw-current-version-pill">
+            <span id="swInstalledLabel">Installed Version: </span>
+            <strong id="swCurrentVersionTag">v2.8.0</strong>
+          </div>
+        </div>
+
+        <!-- Center: Interactive High-Tech Radar / Scanner Animation -->
+        <div class="sw-radar-container">
+          <div class="sw-radar-scanner" id="swRadarScanner">
+            <!-- Concentric Pulse Rings -->
+            <div class="radar-ring ring-1"></div>
+            <div class="radar-ring ring-2"></div>
+            <div class="radar-ring ring-3"></div>
+            <!-- Rotating Sweep Gradient Beam -->
+            <div class="radar-sweep" id="radarSweep"></div>
+            <!-- Center Glowing Core -->
+            <div class="radar-core" id="radarCore">
+              <svg id="radarCoreIcon" class="radar-icon" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="9"></circle>
+                <path d="M12 7v5l3 3"></path>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Status Text below radar -->
+          <div class="sw-scan-status-wrap">
+            <h3 id="swScanHeading" class="sw-scan-heading">Check for Updates</h3>
+            <p id="swScanSubtext" class="sw-scan-subtext">Scan Voice Clock OTA channels to discover new features, performance updates, and bug fixes.</p>
+          </div>
+        </div>
+
+        <!-- Dynamic Results Container -->
+        <div id="swResultContainer" class="sw-result-container">
+          <!-- State: New Version Found Card -->
+          <div id="newVersionCard" class="new-version-card hidden">
+            <div class="new-version-badge-header">
+              <span class="badge-sparkle">✨</span>
+              <span class="new-version-badge-text" id="swFoundNewText">Found New Version!</span>
+              <span id="newVersionBadgeTag" class="new-ver-pill">v2.9.0</span>
+            </div>
+
+            <div class="new-version-details">
+              <div class="new-ver-row">
+                <span class="new-ver-label" id="swUpdateTypeLabel">Update Type</span>
+                <span class="new-ver-val" id="newVerType">Feature &amp; Stability Release</span>
+              </div>
+              <div class="new-ver-row">
+                <span class="new-ver-label" id="swReleaseDateLabel">Release Date</span>
+                <span class="new-ver-val" id="newVerDate">September 29, 2026</span>
+              </div>
+              <div class="new-ver-row">
+                <span class="new-ver-label" id="swPackageSizeLabel">Package Size</span>
+                <span class="new-ver-val" id="newVerSize">~1.5 MB</span>
+              </div>
+
+              <!-- What's New List -->
+              <div class="new-ver-changelog">
+                <h4 id="swChangelogHeading">What's New in this Update:</h4>
+                <ul id="newVerChangelogList" class="changelog-bullets">
+                  <!-- Dynamically populated -->
+                </ul>
+              </div>
+            </div>
+
+            <!-- User Dependent Decision Actions -->
+            <div class="new-ver-actions">
+              <button id="applyRealtimeUpdateBtn" class="sw-action-btn primary" type="button">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                <span id="applyUpdateBtnText">Update to New Version</span>
+              </button>
+              <button id="dismissUpdateBtn" class="sw-action-btn secondary" type="button">
+                <span id="dismissUpdateBtnText">Not Now</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Progress Bar Card (During downloading & applying real-time update) -->
+          <div id="swProgressCard" class="sw-progress-card hidden">
+            <div class="progress-title-row">
+              <span id="swProgressLabel">Downloading Update Package...</span>
+              <span id="swProgressPercent">0%</span>
+            </div>
+            <div class="progress-track">
+              <div id="swProgressBar" class="progress-fill" style="width: 0%;"></div>
+            </div>
+            <p id="swProgressSub" class="progress-sub">Applying real-time OTA hot update. No APK reinstallation needed!</p>
+          </div>
+
+          <!-- Up to date Card (When no update found) -->
+          <div id="upToDateCard" class="up-to-date-card hidden">
+            <div class="up-to-date-icon">✓</div>
+            <h4 id="upToDateHeading">You're All Set!</h4>
+            <p id="upToDateMsg">Voice Clock is running the latest official version. All features and bug fixes are up to date.</p>
+          </div>
+        </div>
+
+        <!-- Initial Action: Check for Updates Button -->
+        <div class="sw-main-action-wrap" id="swMainActionWrap">
+          <button id="startScanBtn" class="sw-action-btn primary" type="button">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+            </svg>
+            <span id="startScanBtnText">Check for Updates</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ================= TIME ZONE MANAGER VIEW ================= -->
+    <div id="timezoneView" class="settings-page hidden">
+      <header class="settings-header">
+        <button id="closeTimezoneBtn" class="back-nav-btn" aria-label="Back">
+          <svg viewBox="0 0 24 24" width="24" height="24">
+            <path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+          </svg>
+        </button>
+        <h2 id="timezoneViewTitle">Time Zone</h2>
+      </header>
+
+      <div class="settings-scroll-content timezone-scroll-content">
+        <!-- Automatic Time Zone Card -->
+        <div class="tz-card auto-tz-card">
+          <div class="tz-card-main">
+            <div class="setting-text">
+              <div class="setting-label" id="tzAutoLabel">Set time zone automatically</div>
+              <div class="setting-sub" id="tzAutoSub">Use device location &amp; network to update time zone as you travel</div>
+            </div>
+            <label class="switch-container">
+              <input type="checkbox" id="settingAutoTimezone">
+              <span class="slider round"></span>
+            </label>
+          </div>
+          <div id="autoTzStatusBadge" class="auto-tz-badge-row">
+            <span class="status-indicator-dot active"></span>
+            <span id="autoTzStatusLabel">Automatic detection active (GPS &amp; Device Network)</span>
+          </div>
+        </div>
+
+        <!-- Current Selected Home Time Zone Display -->
+        <div class="tz-card current-tz-card">
+          <div class="current-tz-header">
+            <span class="current-tz-tag" id="currentTzTag">CURRENT HOME TIME ZONE</span>
+            <span id="currentTzOffsetBadge" class="tz-offset-pill">GMT+05:30</span>
+          </div>
+          <div class="current-tz-body">
+            <div>
+              <div id="currentTzCity" class="current-tz-city">Kolkata, India</div>
+              <div id="currentTzIana" class="current-tz-iana">Asia/Kolkata</div>
+            </div>
+            <div id="currentTzClock" class="current-tz-clock">--:--:--</div>
+          </div>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="tz-search-bar-wrap">
+          <svg class="tz-search-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" id="timezoneSearchInput" class="tz-search-input" placeholder="Search city or country (e.g. Delhi, London, New York)..." autocomplete="off">
+          <button id="clearTzSearchBtn" class="tz-clear-search hidden" type="button" aria-label="Clear search">&times;</button>
+        </div>
+
+        <!-- World Cities Section Header -->
+        <div class="tz-cities-header">
+          <span id="tzWorldHeader">WORLD TIME ZONES</span>
+          <span id="tzCountBadge" class="tz-count-pill">40+ Cities</span>
+        </div>
+
+        <!-- Dynamic List of World Cities -->
+        <div id="timezoneList" class="timezone-list">
+          <!-- Populated dynamically by script.js -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= OPTIONS PICKER MODAL (OPTION BAR) ================= -->
+    <div id="optionsDialogModal" class="options-modal-backdrop hidden">
+      <div class="options-modal-card">
+        <div class="options-modal-drag-pill"></div>
+        <div class="options-modal-header">
+          <h3 id="optionsModalTitle">Select Option</h3>
+          <p id="optionsModalSub" class="options-modal-sub"></p>
+        </div>
+        <div id="optionsModalList" class="options-modal-list">
+          <!-- Populated dynamically with radio options -->
+        </div>
+        <div class="options-modal-actions">
+          <button id="closeOptionsModalBtn" class="options-cancel-btn" type="button">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= DATE & TIME PICKER MODAL ================= -->
+    <div id="dateTimeModal" class="options-modal-backdrop hidden">
+      <div class="options-modal-card date-time-modal-card">
+        <div class="options-modal-drag-pill"></div>
+        <div class="options-modal-header">
+          <h3 id="dateTimeModalTitle">Change Date &amp; Time</h3>
+          <p class="options-modal-sub" id="dateTimeModalSub">Manually adjust or synchronize real time</p>
+        </div>
+        
+        <div class="date-time-inputs-container">
+          <div class="dt-input-group">
+            <label class="dt-input-label" id="dtDateLabel" for="manualDateInput">Date:</label>
+            <input type="date" id="manualDateInput" class="dt-picker-input">
+          </div>
+          <div class="dt-input-group">
+            <label class="dt-input-label" id="dtTimeLabel" for="manualTimeInput">Time:</label>
+            <input type="time" id="manualTimeInput" class="dt-picker-input" step="1">
+          </div>
+
+          <button id="autoSyncTimeBtn" type="button" class="auto-sync-tz-btn">
+            <span class="auto-sync-bolt">⚡</span>
+            <span id="autoSyncBtnText">Auto Synchronize with Selected Time Zone</span>
+          </button>
+          <div id="autoSyncStatusMsg" class="auto-sync-status-msg"></div>
+        </div>
+
+        <div class="options-modal-actions" style="display:flex;gap:10px;">
+          <button id="closeDateTimeModalBtn" class="options-cancel-btn" style="flex:1;" type="button">Cancel</button>
+          <button id="saveDateTimeBtn" class="sw-btn start-btn" style="flex:1.5;margin:0;" type="button">Save Date &amp; Time</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= LOCATION PRIVACY MODAL ================= -->
+    <div id="locationPrivacyModal" class="options-modal-backdrop hidden">
+      <div class="options-modal-card" style="max-width:380px;">
+        <div style="text-align:center;margin-bottom:12px;">
+          <div style="font-size:36px;margin-bottom:6px;">📍</div>
+          <h3 id="locModalTitle" style="margin:0 0 6px;color:var(--text);font-size:18px;">Auto Time Zone Location</h3>
+          <p id="locModalSub" style="font-size:13px;color:var(--muted);margin:0;line-height:1.4;">Privacy &amp; Security Protocol</p>
+        </div>
+        <div id="locModalBody" style="font-size:13px;color:var(--text);line-height:1.5;background:var(--item-bg);padding:14px;border-radius:12px;border:1px solid var(--card-border);">
+          Voice Clock automatically detects your local time zone when you travel using device location.<br><br>
+          🔒 <strong>100% Private &amp; Safe:</strong>
+          <ul style="margin:6px 0 0 16px;padding:0;">
+            <li>Location coordinates never leave your device</li>
+            <li>Zero server tracking or cloud uploads</li>
+            <li>Only used to calculate time offset</li>
+          </ul>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:16px;">
+          <button id="cancelLocationPermBtn" class="sw-btn reset-btn" style="flex:1;" type="button">Cancel</button>
+          <button id="allowLocationPermBtn" class="sw-btn start-btn" style="flex:1;" type="button">Enable</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= PRIVACY POLICY MODAL ================= -->
+    <div id="privacyPolicyModal" class="options-modal-backdrop hidden">
+      <div class="options-modal-card" style="max-height:80vh;display:flex;flex-direction:column;">
+        <div class="options-modal-header" style="flex-shrink:0;">
+          <h3 id="privModalTitle">Privacy &amp; Security Policy</h3>
+          <p id="privModalSub" class="options-modal-sub">Voice Clock On-Device Architecture</p>
+        </div>
+        <div id="privModalBody" style="overflow-y:auto;font-size:13px;color:var(--text);line-height:1.6;padding:0 4px;margin-bottom:12px;">
+          <p><strong>1. Zero Voice Recording Retention:</strong> Voice Clock does not record or store your voice audio on disk or upload it to any third-party cloud.</p>
+          <p><strong>2. Local Speech Recognition:</strong> Voice commands are analyzed directly on your device using native speech recognizers.</p>
+          <p><strong>3. Location Privacy:</strong> When automatic time zone detection is enabled, geolocation coordinates are used strictly in local memory to match timezone offsets and are discarded immediately.</p>
+          <p><strong>4. Battery Efficiency:</strong> Voice Clock automatically shuts down microphone listeners when your device screen turns off, saving battery.</p>
+          <p><strong>5. Created By:</strong> Ayush Kumar Singh (2026).</p>
+        </div>
+        <button id="closePrivacyModalBtn" class="options-cancel-btn" style="flex-shrink:0;" type="button">Close</button>
+      </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+      <button class="tab-btn active" data-tab="alarmTab" onclick="window.switchToTab &amp;&amp; window.switchToTab('alarmTab')">
+        <span class="tab-icon">
+          <svg class="tab-icon-svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="13" r="8"></circle>
+            <path d="M12 9v4l2.5 1.5"></path>
+            <path d="M5 3L2 6"></path>
+            <path d="M19 3l3 3"></path>
+          </svg>
+        </span>
+        <span class="tab-label" id="tabLabelAlarm">Alarm</span>
+      </button>
+      <button class="tab-btn" data-tab="taskTab" onclick="window.switchToTab &amp;&amp; window.switchToTab('taskTab')">
+        <span class="tab-icon">
+          <svg class="tab-icon-svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"></path>
+            <rect x="9" y="3" width="6" height="4" rx="1"></rect>
+            <path d="M9 12l2 2 4-4"></path>
+            <path d="M9 17h6"></path>
+          </svg>
+        </span>
+        <span class="tab-label" id="tabLabelTasks">Tasks</span>
+      </button>
+      <button class="tab-btn" data-tab="voiceTab" onclick="window.switchToTab &amp;&amp; window.switchToTab('voiceTab')">
+        <span class="tab-icon">
+          <svg class="tab-icon-svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+            <line x1="12" y1="19" x2="12" y2="23"></line>
+            <line x1="8" y1="23" x2="16" y2="23"></line>
+          </svg>
+        </span>
+        <span class="tab-label" id="tabLabelVoice">Voice</span>
+      </button>
+      <button class="tab-btn" data-tab="logTab" onclick="window.switchToTab &amp;&amp; window.switchToTab('logTab')">
+        <span class="tab-icon">
+          <svg class="tab-icon-svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="14" r="8"></circle>
+            <line x1="12" y1="6" x2="12" y2="2"></line>
+            <path d="M10 2h4"></path>
+            <line x1="12" y1="14" x2="15" y2="11"></line>
+            <path d="M18.5 7.5L20 6"></path>
+          </svg>
+        </span>
+        <span class="tab-label" id="tabLabelStopwatch">Stopwatch</span>
+      </button>
+    </nav>
+
+  </div>
+
+  <!-- ================= IN-APP ALARM MODAL (Matching snooze_or_dismiss_image.jpeg) ================= -->
+  <div id="alarmModal" class="full-screen-alarm-modal">
+    <div class="alarm-screen-top">
+      <div id="modalTime" class="alarm-screen-clock">09:15</div>
+      <div id="modalLabel" class="alarm-screen-label">Alarm</div>
+      <div id="modalMessage" class="alarm-screen-message"></div>
+    </div>
+
+    <div class="alarm-screen-bottom-wrap">
+      <div class="swipe-hint-bar">
+        <span class="swipe-hint-left" id="alarmSwipeHintLeft">◂ Slide to Snooze</span>
+        <span class="swipe-hint-right" id="alarmSwipeHintRight">Slide to Dismiss ▸</span>
+      </div>
+      <div class="alarm-screen-bottom" id="alarmSliderTrack">
+        <!-- Snooze zzz -->
+        <button id="snoozeBtn" class="action-icon-btn snooze-btn-action" aria-label="Snooze" type="button">
+          <span class="zzz-text">zzz</span>
+        </button>
+
+        <!-- Center White Circle Alarm Icon (Interactive draggable slider) -->
+        <button id="centerAlarmBtn" class="action-center-circle-btn" aria-label="Slide to Snooze or Dismiss" type="button">
+          <svg viewBox="0 0 24 24" width="34" height="34">
+            <path fill="#000000" d="M22 5.72l-4.6-3.86-1.29 1.53 4.6 3.86L22 5.72zM7.88 3.39L6.6 1.86 2 5.71l1.29 1.53 4.59-3.85zM12.5 8H11v6l4.75 2.85.75-1.23-4-2.37V8zM12 4c-4.97 0-9 4.03-9 9s4.02 9 9 9 4.97 0 9-4.03 9-9-4.03-9-9-9zm0 16c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
+          </svg>
+        </button>
+
+        <!-- Dismiss (Alarm off crossed) -->
+        <button id="dismissBtn" class="action-icon-btn dismiss-btn-action" aria-label="Dismiss" type="button">
+          <svg viewBox="0 0 24 24" width="34" height="34">
+            <path fill="#ffffff" d="M12 6c3.87 0 7 3.13 7 7 0 .84-.16 1.65-.43 2.4l1.52 1.52c.58-1.19.91-2.51.91-3.92 0-4.97-4.03-9-9-9-1.41 0-2.73.33-3.93.91l1.53 1.53C10.35 6.16 11.16 6 12 6zM2.81 2.81L1.39 4.22l2.63 2.63C2.77 8.42 2 10.61 2 13c0 4.97 4.02 9 9 9 2.39 0 4.58-.77 6.15-2.02l2.63 2.63 1.41-1.41L2.81 2.81zM11 18.73c-3.13-.48-5.6-2.95-6.08-6.08l8.81 8.81c-.87.35-1.82.54-2.73.54zM7.88 3.39L6.6 1.86 2 5.71l1.29 1.53 4.59-3.85zM22 5.72l-4.6-3.86-1.29 1.53 4.6 3.86L22 5.72z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= IN-APP TASK MODAL (Same design) ================= -->
+  <div id="taskModal" class="full-screen-alarm-modal">
+    <div class="alarm-screen-top">
+      <div id="taskModalTime" class="alarm-screen-clock">09:15</div>
+      <div id="taskModalLabel" class="alarm-screen-label">Task</div>
+    </div>
+
+    <div class="alarm-screen-bottom-wrap">
+      <div class="swipe-hint-bar">
+        <span class="swipe-hint-left" id="taskSwipeHintLeft">◂ Slide to Snooze</span>
+        <span class="swipe-hint-right" id="taskSwipeHintRight">Slide to Dismiss ▸</span>
+      </div>
+      <div class="alarm-screen-bottom" id="taskSliderTrack">
+        <button id="taskSnoozeBtn" class="action-icon-btn snooze-btn-action" aria-label="Snooze" type="button">
+          <span class="zzz-text">zzz</span>
+        </button>
+
+        <button id="taskCenterBtn" class="action-center-circle-btn" aria-label="Slide to Snooze or Dismiss" type="button">
+          <svg viewBox="0 0 24 24" width="34" height="34">
+            <path fill="#000000" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+          </svg>
+        </button>
+
+        <button id="taskDismissBtn" class="action-icon-btn dismiss-btn-action" aria-label="Dismiss" type="button">
+          <svg viewBox="0 0 24 24" width="34" height="34">
+            <path fill="#ffffff" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Google Voice Overlay -->
+  <div id="voiceOverlay" class="voice-overlay hidden">
+    <div class="google-assistant-wrapper">
+      <div class="google-glow-ring">
+        <div class="glow-blur-background"></div>
+        <div class="google-dots-ring">
+          <div class="google-dot dot-blue"></div>
+          <div class="google-dot dot-red"></div>
+          <div class="google-dot dot-yellow"></div>
+          <div class="google-dot dot-green"></div>
+        </div>
+      </div>
+      <p id="voiceText" class="voice-modal-title">Listening...</p>
+      <p id="voiceLiveTranscript" class="live-transcript"></p>
+      <p id="voiceSub" class="voice-modal-sub">Speak clearly in English</p>
+      <button id="closeVoiceOverlayBtn" class="btn-ghost cancel-voice-btn">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Notification Popup Box -->
+  <div id="notification-box" class="notification-box"></div>
+  <!-- Dynamic OTA Asset Loader (Loads live OTA CSS or falls back cleanly) -->
+  <script>
+    (function() {
+      // 1. Inject live OTA CSS if updated bundle exists
+      try {
+        var otaCss = localStorage.getItem('vc_ota_css');
+        if (otaCss && otaCss.length > 20) {
+          var s = document.createElement('style');
+          s.id = 'vc-ota-style';
+          s.textContent = otaCss;
+          document.head.appendChild(s);
+        }
+      } catch (e) {}
+
+      // 2. Clean up any stale/broken OTA JS so built-in v1.0.0 foundation runs clean
+      try {
+        var otaVer = localStorage.getItem('vc_installed_version');
+        if (!otaVer || otaVer === '1.0.0') {
+          localStorage.removeItem('vc_ota_js');
+        }
+      } catch (e) {}
+    })();
+  </script>
+  <!-- Main application script -->
+  <script src="script.js"></script>
+</body>
+
+</html>
