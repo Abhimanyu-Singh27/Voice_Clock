@@ -11,6 +11,14 @@ function initVoiceClockApp() {
     if (typeof window.syncNativeAlarmState === 'function') {
       window.syncNativeAlarmState();
     }
+    if (window.AndroidVoice) {
+      if (typeof window.AndroidVoice.checkAndRequestExactAlarmPermission === 'function') {
+        window.AndroidVoice.checkAndRequestExactAlarmPermission();
+      }
+      if (typeof window.AndroidVoice.checkAndRequestBatteryOptimization === 'function') {
+        window.AndroidVoice.checkAndRequestBatteryOptimization();
+      }
+    }
   });
 
   // Safe logger
@@ -344,7 +352,11 @@ function initVoiceClockApp() {
       alarmSwipeHintLeft: '◂ Slide to Snooze',
       alarmSwipeHintRight: 'Slide to Dismiss ▸',
       taskSwipeHintLeft: '◂ Slide to Snooze',
-      taskSwipeHintRight: 'Slide to Dismiss ▸'
+      taskSwipeHintRight: 'Slide to Dismiss ▸',
+      alarmVoiceLabel: 'Choose Voice:',
+      editAlarmVoiceLabel: 'Choose Voice:',
+      taskVoiceLabel: 'Choose Voice:',
+      editTaskVoiceLabel: 'Choose Voice:'
     },
     hi: {
       tabLabelAlarm: 'अलार्म',
@@ -531,9 +543,82 @@ function initVoiceClockApp() {
       alarmSwipeHintLeft: '◂ स्नूज़ के लिए स्लाइड करें',
       alarmSwipeHintRight: 'बंद करने के लिए स्लाइड करें ▸',
       taskSwipeHintLeft: '◂ स्नूज़ के लिए स्लाइड करें',
-      taskSwipeHintRight: 'बंद करने के लिए स्लाइड करें ▸'
+      taskSwipeHintRight: 'बंद करने के लिए स्लाइड करें ▸',
+      alarmVoiceLabel: 'आवाज़ चुनें:',
+      editAlarmVoiceLabel: 'आवाज़ चुनें:',
+      taskVoiceLabel: 'आवाज़ चुनें:',
+      editTaskVoiceLabel: 'आवाज़ चुनें:'
     }
   };
+
+  // -------------------- 6 DIVERSE HIGH-QUALITY VOICES (MEN & WOMEN) --------------------
+  const VOICE_OPTIONS = [
+    {
+      id: 'female_1',
+      nameEn: 'Aria (Female - Clear & Soft)',
+      nameHi: 'आर्या (महिला - सौम्य और स्पष्ट)',
+      gender: 'female',
+      pitch: 1.18,
+      rate: 1.0
+    },
+    {
+      id: 'male_1',
+      nameEn: 'Guy (Male - Deep & Bold)',
+      nameHi: 'अजय (पुरुष - गंभीर और स्पष्ट)',
+      gender: 'male',
+      pitch: 0.78,
+      rate: 0.95
+    },
+    {
+      id: 'female_2',
+      nameEn: 'Jenny (Female - Friendly & Bright)',
+      nameHi: 'जेनी (महिला - मधुर और सक्रिय)',
+      gender: 'female',
+      pitch: 1.30,
+      rate: 1.05
+    },
+    {
+      id: 'male_2',
+      nameEn: 'David (Male - Calm & Confident)',
+      nameHi: 'डेविड (पुरुष - शांत और आत्मविश्वास)',
+      gender: 'male',
+      pitch: 0.85,
+      rate: 1.0
+    },
+    {
+      id: 'female_in',
+      nameEn: 'Pooja (Female - Warm Indian Accent)',
+      nameHi: 'पूजा (महिला - भारतीय शैली)',
+      gender: 'female',
+      pitch: 1.15,
+      rate: 1.0
+    },
+    {
+      id: 'male_in',
+      nameEn: 'Rohan (Male - Gentle Indian Accent)',
+      nameHi: 'रोहन (पुरुष - भारतीय शैली)',
+      gender: 'male',
+      pitch: 0.82,
+      rate: 0.98
+    }
+  ];
+
+  function updateVoiceDropdownOptions(isHi) {
+    const dropdownIds = ['alarmVoice', 'editAlarmVoice', 'taskVoice', 'editTaskVoice'];
+    dropdownIds.forEach(id => {
+      const el = $(id);
+      if (!el) return;
+      const currentVal = el.value || 'female_1';
+      el.innerHTML = '';
+      VOICE_OPTIONS.forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v.id;
+        opt.textContent = isHi ? v.nameHi : v.nameEn;
+        if (v.id === currentVal) opt.selected = true;
+        el.appendChild(opt);
+      });
+    });
+  }
 
   function updateDayPillsLanguage(isHi) {
     const dayLabelsEn = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -686,7 +771,11 @@ function initVoiceClockApp() {
       'alarmRepeatDaysLabel',
       'editAlarmRepeatDaysLabel',
       'taskRepeatDaysLabel',
-      'editTaskRepeatDaysLabel'
+      'editTaskRepeatDaysLabel',
+      'alarmVoiceLabel',
+      'editAlarmVoiceLabel',
+      'taskVoiceLabel',
+      'editTaskVoiceLabel'
     ];
 
     directIdMap.forEach(id => {
@@ -839,6 +928,15 @@ function initVoiceClockApp() {
     }
 
     updateDayPillsLanguage(isHi);
+    updateVoiceDropdownOptions(isHi);
+
+    ['btnPreviewAlarmVoice', 'btnPreviewEditAlarmVoice', 'btnPreviewTaskVoice', 'btnPreviewEditTaskVoice'].forEach(btnId => {
+      const btn = $(btnId);
+      if (btn) {
+        const span = btn.querySelector('span');
+        if (span) span.textContent = isHi ? 'सुनें' : 'Listen';
+      }
+    });
 
     if (window.AndroidVoice && typeof window.AndroidVoice.setNativeAppLanguage === 'function') {
       try {
@@ -2430,35 +2528,54 @@ function initVoiceClockApp() {
     detectAndSetLocalTimezone();
   }
 
-  // -------------------- TTS SYSTEM --------------------
-  function playTTS(text, lang = "en-US") {
-    return new Promise((resolve) => {
-      const selectedLang = $('voiceLangSelect')?.value || "hi-IN";
-      const isHindiText = /[\u0900-\u097F]/.test(text) || selectedLang.startsWith("hi");
-      const speakLang = isHindiText ? "hi-IN" : (lang || "en-US");
+  // -------------------- TTS SYSTEM & VOICE ENGINE --------------------
+  function stopAllTTS() {
+    if (window.AndroidVoice && typeof window.AndroidVoice.stopNativeTTS === 'function') {
+      try {
+        window.AndroidVoice.stopNativeTTS();
+      } catch (e) {
+        console.log("stopNativeTTS error:", e);
+      }
+    }
+    if ('speechSynthesis' in window) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch (e) {}
+    }
+  }
 
-      if (
-        window.Capacitor &&
-        window.Capacitor.Plugins &&
-        window.Capacitor.Plugins.TextToSpeech
-      ) {
-        window.Capacitor.Plugins.TextToSpeech.speak({
-          text: text,
-          lang: speakLang,
-          rate: 1.0,
-          pitch: 1.0,
-          volume: 1.0
-        }).then(resolve).catch(err => {
-          console.log("Capacitor TTS error:", err);
-          fallbackWebSpeech(text, speakLang, resolve);
-        });
+  function playTTS(text, lang = "en-US", voiceId = "female_1") {
+    return new Promise((resolve) => {
+      if (!text || !text.trim()) {
+        resolve();
         return;
       }
-      fallbackWebSpeech(text, speakLang, resolve);
+      stopAllTTS();
+
+      const selectedLang = $('voiceLangSelect')?.value || (userSettings.appLanguage === 'hi' ? "hi-IN" : "en-US");
+      const isHindiText = /[\u0900-\u097F]/.test(text) || selectedLang.startsWith("hi");
+      const speakLang = isHindiText ? "hi-IN" : (lang || "en-US");
+      const activeVoiceId = voiceId || "female_1";
+
+      // 1. Android Native TTS (Single source of truth on Android - matches AlarmService)
+      if (window.AndroidVoice && typeof window.AndroidVoice.playNativeTTS === 'function') {
+        try {
+          window.AndroidVoice.playNativeTTS(text, activeVoiceId, speakLang);
+          const words = text.trim().split(/\s+/).length;
+          const durationMs = Math.max(1600, Math.min(10000, words * 380));
+          setTimeout(resolve, durationMs);
+          return;
+        } catch (e) {
+          console.log("playNativeTTS error:", e);
+        }
+      }
+
+      // 2. Web Speech API fallback with precise voice, pitch, and rate
+      fallbackWebSpeech(text, speakLang, activeVoiceId, resolve);
     });
   }
 
-  function fallbackWebSpeech(text, lang, callback) {
+  function fallbackWebSpeech(text, lang, voiceId, callback) {
     if (!('speechSynthesis' in window)) {
       if (callback) callback();
       return;
@@ -2467,9 +2584,29 @@ function initVoiceClockApp() {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = lang || 'en-US';
-      utterance.rate = 1.0;
-      utterance.pitch = 1.0;
+
+      // Apply voice pitch & rate matching selected voice configuration
+      const voiceCfg = (typeof VOICE_OPTIONS !== 'undefined' ? VOICE_OPTIONS.find(v => v.id === voiceId) : null) || { pitch: 1.0, rate: 1.0, gender: 'female' };
+      utterance.pitch = voiceCfg.pitch || 1.0;
+      utterance.rate = voiceCfg.rate || 1.0;
       utterance.volume = 1.0;
+
+      // Match system browser voice by gender and language if available
+      const voices = window.speechSynthesis.getVoices();
+      if (voices && voices.length > 0) {
+        const langMatches = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith(lang.substring(0, 2).toLowerCase()));
+        const pool = langMatches.length > 0 ? langMatches : voices;
+        const wantGender = voiceCfg.gender; // 'female' or 'male'
+        const matchedVoice = pool.find(v => {
+          const n = (v.name + " " + (v.voiceURI || '')).toLowerCase();
+          return wantGender === 'female'
+            ? (n.includes('female') || n.includes('woman') || n.includes('zira') || n.includes('samantha') || n.includes('kavya') || n.includes('priya'))
+            : (n.includes('male') || n.includes('man') || n.includes('david') || n.includes('george') || n.includes('ravi') || n.includes('mark') || n.includes('guy'));
+        }) || pool[0];
+        if (matchedVoice) {
+          utterance.voice = matchedVoice;
+        }
+      }
 
       let called = false;
       const finish = () => {
@@ -2487,6 +2624,29 @@ function initVoiceClockApp() {
       if (callback) callback();
     }
   }
+
+  // Voice Preview Listeners
+  function setupVoicePreview(btnId, selectId) {
+    const btn = $(btnId);
+    if (!btn) return;
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const voiceId = $(selectId)?.value || 'female_1';
+      const isHi = userSettings.appLanguage === 'hi';
+      const sampleText = isHi
+        ? 'नमस्ते! यह आपकी चुनी हुई वॉयस क्लॉक आवाज़ है।'
+        : 'Hello! This is your selected Voice Clock speech voice.';
+      const lang = isHi ? 'hi-IN' : 'en-US';
+      showPopup(isHi ? 'आवाज़ का नमूना सुनाया जा रहा है...' : 'Playing voice preview...');
+      playTTS(sampleText, lang, voiceId);
+    });
+  }
+
+  setupVoicePreview('btnPreviewAlarmVoice', 'alarmVoice');
+  setupVoicePreview('btnPreviewEditAlarmVoice', 'editAlarmVoice');
+  setupVoicePreview('btnPreviewTaskVoice', 'taskVoice');
+  setupVoicePreview('btnPreviewEditTaskVoice', 'editTaskVoice');
 
   function playAudioFile(src) {
     const audio = new Audio(src);
@@ -2654,6 +2814,7 @@ function initVoiceClockApp() {
     }
     if ($('alarmName')) $('alarmName').value = '';
     if ($('ttsText')) $('ttsText').value = '';
+    if ($('alarmVoice')) $('alarmVoice').value = 'female_1';
     if ($('alarmRepeat')) $('alarmRepeat').value = 'once';
     if ($('alarmCustomHours')) $('alarmCustomHours').value = '';
     if ($('alarmCustomMinutes')) $('alarmCustomMinutes').value = '';
@@ -2670,6 +2831,7 @@ function initVoiceClockApp() {
 
   function resetTaskForm() {
     if ($('taskTitle')) $('taskTitle').value = '';
+    if ($('taskVoice')) $('taskVoice').value = 'female_1';
     const tTimeInput = $('taskTime');
     if (tTimeInput) {
       tTimeInput.value = '';
@@ -2726,6 +2888,7 @@ function initVoiceClockApp() {
     a.time = new Date(a.time);
     if (isNaN(a.time.getTime())) a.time = new Date();
     if (a.enabled === undefined) a.enabled = true;
+    if (!a.voice) a.voice = 'female_1';
   });
 
   function saveAlarms() {
@@ -2785,6 +2948,7 @@ function initVoiceClockApp() {
     const rep = alarmRepeat?.value || 'once';
     const alarmLabel = $('alarmName')?.value.trim() || (isHi ? 'अलार्म' : 'Alarm');
     const messageText = $('ttsText')?.value.trim() || alarmLabel;
+    const chosenVoice = $('alarmVoice')?.value || 'female_1';
 
     const customH = parseInt($('alarmCustomHours')?.value || 0, 10);
     const customM = parseInt($('alarmCustomMinutes')?.value || 0, 10);
@@ -2824,6 +2988,7 @@ function initVoiceClockApp() {
       intervalMs: intervalMs,
       mode: modeSelect?.value || 'tts',
       ttsText: messageText,
+      voice: chosenVoice,
       audioData: uploadedAudioBase64 || null,
       enabled: true,
       ringing: false,
@@ -2841,7 +3006,8 @@ function initVoiceClockApp() {
         al.time.getTime(),
         al.label,
         al.mode,
-        al.ttsText
+        al.ttsText,
+        al.voice
       );
     }
 
@@ -2891,16 +3057,14 @@ function initVoiceClockApp() {
     const daysStr = hasDays ? formatDaysSummary(al.repeatDays, isHi) : '';
     const intervalStr = (al.repeat && al.repeat !== 'once' && al.repeat !== 'days') ? formatIntervalSummary(al.repeat, al.intervalMs, isHi) : '';
 
+    let res = '';
     if (daysStr && intervalStr) {
-      return `${daysStr} • ${intervalStr}`;
-    }
-    if (daysStr) {
-      return daysStr;
-    }
-    if (intervalStr) {
-      return intervalStr;
-    }
-    if (al.repeat === 'once') {
+      res = `${daysStr} • ${intervalStr}`;
+    } else if (daysStr) {
+      res = daysStr;
+    } else if (intervalStr) {
+      res = intervalStr;
+    } else if (al.repeat === 'once') {
       const d = new Date(al.time);
       const daysEn = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
       const daysHi = ["रवि", "सोम", "मंगल", "बुध", "गुरु", "शुक्र", "शनि"];
@@ -2908,9 +3072,19 @@ function initVoiceClockApp() {
       const monthsHi = ["जन", "फ़र", "मार्च", "अप्रैल", "मई", "जून", "जुल", "अग", "सितं", "अक्तू", "नवं", "दिसं"];
       const day = isHi ? daysHi[d.getDay()] : daysEn[d.getDay()];
       const month = isHi ? monthsHi[d.getMonth()] : monthsEn[d.getMonth()];
-      return isHi ? `एक बार • ${day}, ${d.getDate()} ${month}` : `Once • ${day}, ${d.getDate()} ${month}`;
+      res = isHi ? `एक बार • ${day}, ${d.getDate()} ${month}` : `Once • ${day}, ${d.getDate()} ${month}`;
+    } else {
+      res = al.repeat || (isHi ? 'प्रतिदिन' : 'Every day');
     }
-    return al.repeat || (isHi ? 'प्रतिदिन' : 'Every day');
+
+    if (al.mode !== 'upload' && al.voice && typeof VOICE_OPTIONS !== 'undefined') {
+      const vObj = VOICE_OPTIONS.find(v => v.id === al.voice);
+      if (vObj) {
+        const vName = isHi ? vObj.nameHi.split(' ')[0] : vObj.nameEn.split(' ')[0];
+        res += ` • 🎙️ ${vName}`;
+      }
+    }
+    return res;
   }
 
   function renderAlarms() {
@@ -2984,7 +3158,7 @@ function initVoiceClockApp() {
             al.time = next;
           }
           if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
-            window.AndroidVoice.scheduleAlarm(al.id, al.time.getTime(), al.label, al.mode, al.ttsText);
+            window.AndroidVoice.scheduleAlarm(al.id, al.time.getTime(), al.label, al.mode, al.ttsText, al.voice || 'female_1');
           }
         }
         saveAlarms();
@@ -3035,6 +3209,7 @@ function initVoiceClockApp() {
 
     if ($('editAlarmName')) $('editAlarmName').value = al.label || '';
     if ($('editTtsText')) $('editTtsText').value = al.ttsText || al.message || '';
+    if ($('editAlarmVoice')) $('editAlarmVoice').value = al.voice || 'female_1';
 
     const repSelect = $('editAlarmRepeat');
     if (repSelect) {
@@ -3138,6 +3313,7 @@ function initVoiceClockApp() {
     const rep = $('editAlarmRepeat')?.value || 'once';
     const label = $('editAlarmName')?.value.trim() || (isHi ? 'अलार्म' : 'Alarm');
     const msg = $('editTtsText')?.value.trim() || label;
+    const chosenVoice = $('editAlarmVoice')?.value || 'female_1';
 
     let intervalMs = null;
     if (rep === 'custom') {
@@ -3177,6 +3353,7 @@ function initVoiceClockApp() {
     al.label = label;
     al.message = msg;
     al.ttsText = msg;
+    al.voice = chosenVoice;
     al.intervalMs = intervalMs;
     al.mode = $('editMode')?.value || 'tts';
     if (al.mode === 'upload' && editUploadedAudioBase64) {
@@ -3197,7 +3374,8 @@ function initVoiceClockApp() {
         al.time.getTime(),
         al.label,
         al.mode,
-        al.ttsText
+        al.ttsText,
+        al.voice
       );
     }
 
@@ -3247,29 +3425,37 @@ function initVoiceClockApp() {
     alarmModal?.classList.add('show');
     showPopup(isHi ? `⏰ अलार्म: ${al.label}` : `⏰ Alarm: ${al.label}`);
 
-    if (al.mode === 'upload' && al.audioData) {
-      al.audioObj = playAudioFile(al.audioData);
+    if (window.AndroidVoice) {
+      // AlarmService handles all audio, vibration, and TTS natively with the single selected voice!
+      // Do not run parallel WebView WebSpeech loop to eliminate conflicting dual voices.
     } else {
-      const loopTTS = async () => {
-        if (!al.ringing || currentActiveAlarmId !== al.id) return;
-        await playTTS(al.ttsText || al.label || 'Alarm');
-        if (!al.ringing || currentActiveAlarmId !== al.id) return;
-        al.loopTimeout = setTimeout(loopTTS, 1500);
-      };
-      loopTTS();
+      if (al.mode === 'upload' && al.audioData) {
+        al.audioObj = playAudioFile(al.audioData);
+      } else {
+        const loopTTS = async () => {
+          if (!al.ringing || currentActiveAlarmId !== al.id) return;
+          await playTTS(al.ttsText || al.label || 'Alarm', 'en-US', al.voice || 'female_1');
+          if (!al.ringing || currentActiveAlarmId !== al.id) return;
+          al.loopTimeout = setTimeout(loopTTS, 1500);
+        };
+        loopTTS();
+      }
     }
   }
 
   function stopAlarmAudio(id) {
-    try {
-      window.speechSynthesis?.cancel();
-    } catch {}
+    stopAllTTS();
 
-    if (window.AndroidVoice && window.AndroidVoice.stopAlarmVibrationNative) {
-      window.AndroidVoice.stopAlarmVibrationNative();
-    }
-    if (window.AndroidVoice && window.AndroidVoice.setAlarmRinging) {
-      window.AndroidVoice.setAlarmRinging(false);
+    if (window.AndroidVoice) {
+      if (window.AndroidVoice.stopAlarmService) {
+        window.AndroidVoice.stopAlarmService();
+      }
+      if (window.AndroidVoice.stopAlarmVibrationNative) {
+        window.AndroidVoice.stopAlarmVibrationNative();
+      }
+      if (window.AndroidVoice.setAlarmRinging) {
+        window.AndroidVoice.setAlarmRinging(false);
+      }
     }
 
     const al = alarms.find(x => x.id === id);
@@ -3429,7 +3615,8 @@ function initVoiceClockApp() {
         snoozeTime,
         al.label,
         al.mode,
-        al.ttsText
+        al.ttsText,
+        al.voice || 'female_1'
       );
     }
     if (window.AndroidVoice && window.AndroidVoice.syncAlarmSnooze) {
@@ -3488,12 +3675,12 @@ function initVoiceClockApp() {
         advanceAlarmToNextRepeatDay(al);
       }
       if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
-        window.AndroidVoice.scheduleAlarm(al.id, al.time.getTime(), al.label, al.mode, al.ttsText);
+        window.AndroidVoice.scheduleAlarm(al.id, al.time.getTime(), al.label, al.mode, al.ttsText, al.voice || 'female_1');
       }
     } else if (hasDays) {
       advanceAlarmToNextRepeatDay(al);
       if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
-        window.AndroidVoice.scheduleAlarm(al.id, al.time.getTime(), al.label, al.mode, al.ttsText);
+        window.AndroidVoice.scheduleAlarm(al.id, al.time.getTime(), al.label, al.mode, al.ttsText, al.voice || 'female_1');
       }
     } else if (hasInterval) {
       let interval = 60000;
@@ -3516,7 +3703,7 @@ function initVoiceClockApp() {
       al.time = nextTime;
       al.enabled = true;
       if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
-        window.AndroidVoice.scheduleAlarm(al.id, al.time.getTime(), al.label, al.mode, al.ttsText);
+        window.AndroidVoice.scheduleAlarm(al.id, al.time.getTime(), al.label, al.mode, al.ttsText, al.voice || 'female_1');
       }
     } else {
       al.enabled = false;
@@ -3568,6 +3755,7 @@ function initVoiceClockApp() {
     t.time = new Date(t.time);
     if (isNaN(t.time.getTime())) t.time = new Date();
     if (t.enabled === undefined) t.enabled = true;
+    if (!t.voice) t.voice = 'female_1';
   });
 
   function saveTasks() {
@@ -3593,6 +3781,7 @@ function initVoiceClockApp() {
     const tTitle = $('taskTitle')?.value.trim();
     const tTime = $('taskTime')?.value;
     const tRepeat = taskRepeat?.value || 'once';
+    const taskVoice = $('taskVoice')?.value || 'female_1';
 
     if (!tTitle || !tTime) {
       alert(isHi ? 'कृपया शीर्षक और समय दर्ज करें' : 'Please enter title & date/time');
@@ -3639,6 +3828,7 @@ function initVoiceClockApp() {
       repeat: tRepeat,
       repeatDays: selectedDays,
       intervalMs: customIntervalMs,
+      voice: taskVoice,
       enabled: true,
       ringing: false,
       snoozedUntil: null,
@@ -3655,7 +3845,8 @@ function initVoiceClockApp() {
         task.time.getTime(),
         task.title,
         'task',
-        task.title
+        task.title,
+        task.voice
       );
     }
 
@@ -3696,6 +3887,14 @@ function initVoiceClockApp() {
       else if (daysStr) subStr += ` • ${daysStr}`;
       else if (intervalStr) subStr += ` • ${intervalStr}`;
       else subStr += ` • ${isHi ? 'एक बार' : 'Once'}`;
+
+      if (t.voice && typeof VOICE_OPTIONS !== 'undefined') {
+        const vObj = VOICE_OPTIONS.find(v => v.id === t.voice);
+        if (vObj) {
+          const vName = isHi ? vObj.nameHi.split(' ')[0] : vObj.nameEn.split(' ')[0];
+          subStr += ` • 🎙️ ${vName}`;
+        }
+      }
 
       card.innerHTML = `
         <div class="alarm-item-left" data-id="${t.id}" style="cursor:pointer;" title="${isHi ? 'कार्य संपादित करने के लिए क्लिक करें' : 'Click to edit task'}">
@@ -3747,7 +3946,7 @@ function initVoiceClockApp() {
             t.time = next;
           }
           if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
-            window.AndroidVoice.scheduleAlarm(t.id, t.time.getTime(), t.title, 'task', t.title);
+            window.AndroidVoice.scheduleAlarm(t.id, t.time.getTime(), t.title, 'task', t.title, t.voice || 'female_1');
           }
         }
         saveTasks();
@@ -3787,6 +3986,7 @@ function initVoiceClockApp() {
     currentEditingTaskId = id;
 
     if ($('editTaskTitle')) $('editTaskTitle').value = t.title || '';
+    if ($('editTaskVoice')) $('editTaskVoice').value = t.voice || 'female_1';
 
     const editTimeInput = $('editTaskTime');
     const editTimePh = $('editTaskDatePlaceholder');
@@ -3863,6 +4063,8 @@ function initVoiceClockApp() {
     const isHi = userSettings.appLanguage === 'hi';
     const title = $('editTaskTitle')?.value.trim();
     const timeVal = $('editTaskTime')?.value;
+    const chosenVoice = $('editTaskVoice')?.value || 'female_1';
+
     if (!title || !timeVal) {
       alert(isHi ? 'कृपया शीर्षक और समय दर्ज करें' : 'Please enter title & date/time');
       return;
@@ -3908,6 +4110,7 @@ function initVoiceClockApp() {
     }
 
     t.title = title;
+    t.voice = chosenVoice;
     t.intervalMs = customIntervalMs;
     t.enabled = true;
     t.ringing = false;
@@ -3918,7 +4121,7 @@ function initVoiceClockApp() {
       window.AndroidVoice.cancelAlarm(t.id);
     }
     if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
-      window.AndroidVoice.scheduleAlarm(t.id, t.time.getTime(), t.title, 'task', t.title);
+      window.AndroidVoice.scheduleAlarm(t.id, t.time.getTime(), t.title, 'task', t.title, t.voice);
     }
 
     $('taskEditView')?.classList.add('hidden');
@@ -3957,25 +4160,33 @@ function initVoiceClockApp() {
     const isHi = userSettings.appLanguage === 'hi';
     showPopup(isHi ? `🔔 कार्य: ${t.title}` : `🔔 Task: ${t.title}`);
 
-    const loopFunc = async () => {
-      if (!t.ringing || currentActiveTaskId !== t.id) return;
-      await playTTS(t.title);
-      if (!t.ringing || currentActiveTaskId !== t.id) return;
-      t.loopTimeout = setTimeout(loopFunc, 1500);
-    };
-    loopFunc();
+    if (window.AndroidVoice) {
+      // AlarmService in Android handles all ringing sound and TTS natively with single chosen voice!
+      // Do not run parallel WebView WebSpeech loop.
+    } else {
+      const loopFunc = async () => {
+        if (!t.ringing || currentActiveTaskId !== t.id) return;
+        await playTTS(t.title, 'en-US', t.voice || 'female_1');
+        if (!t.ringing || currentActiveTaskId !== t.id) return;
+        t.loopTimeout = setTimeout(loopFunc, 1500);
+      };
+      loopFunc();
+    }
   }
 
   function stopTaskAudio(id) {
-    try {
-      window.speechSynthesis?.cancel();
-    } catch {}
+    stopAllTTS();
 
-    if (window.AndroidVoice && window.AndroidVoice.stopAlarmVibrationNative) {
-      window.AndroidVoice.stopAlarmVibrationNative();
-    }
-    if (window.AndroidVoice && window.AndroidVoice.setAlarmRinging) {
-      window.AndroidVoice.setAlarmRinging(false);
+    if (window.AndroidVoice) {
+      if (window.AndroidVoice.stopAlarmService) {
+        window.AndroidVoice.stopAlarmService();
+      }
+      if (window.AndroidVoice.stopAlarmVibrationNative) {
+        window.AndroidVoice.stopAlarmVibrationNative();
+      }
+      if (window.AndroidVoice.setAlarmRinging) {
+        window.AndroidVoice.setAlarmRinging(false);
+      }
     }
 
     const t = tasks.find(x => x.id === id);
@@ -4013,7 +4224,7 @@ function initVoiceClockApp() {
     saveTasks();
 
     if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
-      window.AndroidVoice.scheduleAlarm(t.id, snoozeTime, t.title, 'task', t.title);
+      window.AndroidVoice.scheduleAlarm(t.id, snoozeTime, t.title, 'task', t.title, t.voice || 'female_1');
     }
 
     currentActiveTaskId = null;
@@ -4063,12 +4274,12 @@ function initVoiceClockApp() {
         advanceTaskToNextRepeatDay(t);
       }
       if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
-        window.AndroidVoice.scheduleAlarm(t.id, t.time.getTime(), t.title, 'task', t.title);
+        window.AndroidVoice.scheduleAlarm(t.id, t.time.getTime(), t.title, 'task', t.title, t.voice || 'female_1');
       }
     } else if (hasDays) {
       advanceTaskToNextRepeatDay(t);
       if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
-        window.AndroidVoice.scheduleAlarm(t.id, t.time.getTime(), t.title, 'task', t.title);
+        window.AndroidVoice.scheduleAlarm(t.id, t.time.getTime(), t.title, 'task', t.title, t.voice || 'female_1');
       }
     } else if (hasInterval) {
       let interval = 60000;
@@ -4089,7 +4300,7 @@ function initVoiceClockApp() {
       t.time = nextTime;
       t.enabled = true;
       if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
-        window.AndroidVoice.scheduleAlarm(t.id, t.time.getTime(), t.title, 'task', t.title);
+        window.AndroidVoice.scheduleAlarm(t.id, t.time.getTime(), t.title, 'task', t.title, t.voice || 'female_1');
       }
     } else {
       t.enabled = false;
@@ -4389,6 +4600,7 @@ function initVoiceClockApp() {
       if (target <= now) {
         target.setDate(target.getDate() + 1);
       }
+      const chosenVoice = $('alarmVoice')?.value || 'female_1';
       const al = {
         id: 'AL' + Date.now(),
         time: target,
@@ -4397,6 +4609,7 @@ function initVoiceClockApp() {
         repeat: 'once',
         mode: 'tts',
         ttsText: parsed.label || (isHi ? 'अलार्म' : 'Alarm'),
+        voice: chosenVoice,
         enabled: true,
         ringing: false,
         loopTimeout: null,
@@ -4406,10 +4619,10 @@ function initVoiceClockApp() {
       saveAlarms();
       renderAlarms();
       if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
-        window.AndroidVoice.scheduleAlarm(al.id, al.time.getTime(), al.label, 'tts', al.ttsText);
+        window.AndroidVoice.scheduleAlarm(al.id, al.time.getTime(), al.label, 'tts', al.ttsText, al.voice);
       }
       showToast(isHi ? `अलार्म ${formatAlarmTimeString(al.time)} के लिए सेट किया गया` : `Alarm set for ${formatAlarmTimeString(al.time)}`);
-      playTTS(isHi ? `अलार्म ${formatAlarmTimeString(al.time)} बजे के लिए सेट कर दिया गया है` : `Alarm set for ${formatAlarmTimeString(al.time)}`);
+      playTTS(isHi ? `अलार्म ${formatAlarmTimeString(al.time)} बजे के लिए सेट कर दिया गया है` : `Alarm set for ${formatAlarmTimeString(al.time)}`, isHi ? 'hi-IN' : 'en-US', al.voice);
       return;
     }
 
@@ -4420,11 +4633,13 @@ function initVoiceClockApp() {
       if (target <= now) {
         target.setDate(target.getDate() + 1);
       }
+      const chosenTaskVoice = $('taskVoice')?.value || 'female_1';
       const t = {
         id: 'TSK' + Date.now(),
         title: parsed.title,
         time: target,
         repeat: 'once',
+        voice: chosenTaskVoice,
         enabled: true,
         ringing: false,
         loopTimeout: null,
@@ -4434,10 +4649,10 @@ function initVoiceClockApp() {
       saveTasks();
       renderTasks();
       if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
-        window.AndroidVoice.scheduleAlarm(t.id, t.time.getTime(), t.title, 'task', t.title);
+        window.AndroidVoice.scheduleAlarm(t.id, t.time.getTime(), t.title, 'task', t.title, t.voice);
       }
       showToast(isHi ? `कार्य ${formatAlarmTimeString(t.time)} के लिए निर्धारित किया गया` : `Task scheduled for ${formatAlarmTimeString(t.time)}`);
-      playTTS(isHi ? `कार्य ${parsed.title} निर्धारित कर दिया गया है` : `Task scheduled for ${formatAlarmTimeString(t.time)}`);
+      playTTS(isHi ? `कार्य ${parsed.title} निर्धारित कर दिया गया है` : `Task scheduled for ${formatAlarmTimeString(t.time)}`, isHi ? 'hi-IN' : 'en-US', t.voice);
       return;
     }
 
@@ -4814,7 +5029,8 @@ function initVoiceClockApp() {
             al.time.getTime(),
             al.label,
             al.mode,
-            al.ttsText
+            al.ttsText,
+            al.voice || 'female_1'
           );
         }
       } else if (al.repeat === 'once') {
@@ -4839,6 +5055,16 @@ function initVoiceClockApp() {
         }
         al.time = nextTime;
         al.snoozedUntil = null;
+        if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
+          window.AndroidVoice.scheduleAlarm(
+            al.id,
+            al.time.getTime(),
+            al.label,
+            al.mode,
+            al.ttsText,
+            al.voice || 'female_1'
+          );
+        }
       }
       saveAlarms();
       renderAlarms();
@@ -4887,6 +5113,10 @@ function initVoiceClockApp() {
                 if (!isNaN(natTime) && natTime > local.time.getTime()) {
                   local.snoozedUntil = natTime;
                   local.ringing = false;
+                  changed = true;
+                }
+                if (nat.voice && local.voice !== nat.voice) {
+                  local.voice = nat.voice;
                   changed = true;
                 }
               }

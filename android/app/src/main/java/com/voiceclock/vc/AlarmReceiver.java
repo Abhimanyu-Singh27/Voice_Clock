@@ -12,6 +12,8 @@ import androidx.core.content.ContextCompat;
 
 public class AlarmReceiver extends BroadcastReceiver {
 
+    private static PowerManager.WakeLock sWakeLock;
+
     @Override
     public void onReceive(Context context, Intent intent) {
         if (intent == null) return;
@@ -20,21 +22,24 @@ public class AlarmReceiver extends BroadcastReceiver {
         PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
         if (pm != null) {
             try {
-                @SuppressWarnings("deprecation")
-                PowerManager.WakeLock wakeLock = pm.newWakeLock(
-                        PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP | PowerManager.ON_AFTER_RELEASE,
-                        "VoiceClock:AlarmReceiverWakeFull"
+                if (sWakeLock != null && sWakeLock.isHeld()) {
+                    try { sWakeLock.release(); } catch (Exception ignored) {}
+                }
+                sWakeLock = pm.newWakeLock(
+                        PowerManager.PARTIAL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP,
+                        "VoiceClock:AlarmReceiverStaticWake"
                 );
-                wakeLock.acquire(45000);
-            } catch (Exception e) {
-                try {
-                    PowerManager.WakeLock wakeLock = pm.newWakeLock(
-                            PowerManager.PARTIAL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP,
-                            "VoiceClock:AlarmReceiverWakePartial"
-                    );
-                    wakeLock.acquire(45000);
-                } catch (Exception ignored) {}
-            }
+                sWakeLock.acquire(60000);
+            } catch (Exception ignored) {}
+
+            try {
+                @SuppressWarnings("deprecation")
+                PowerManager.WakeLock screenLock = pm.newWakeLock(
+                        PowerManager.SCREEN_BRIGHT_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP | PowerManager.ON_AFTER_RELEASE,
+                        "VoiceClock:AlarmReceiverScreenBright"
+                );
+                screenLock.acquire(20000);
+            } catch (Exception ignored) {}
         }
 
         // If this is a Snooze trigger action from notification
@@ -78,14 +83,27 @@ public class AlarmReceiver extends BroadcastReceiver {
                     }
                     showIntent.removeExtra("snoozeTrigger");
                     showIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+
+                    android.os.Bundle optionsBundle = null;
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                        android.app.ActivityOptions options = android.app.ActivityOptions.makeBasic();
+                        options.setPendingIntentBackgroundActivityStartMode(android.app.ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED);
+                        optionsBundle = options.toBundle();
+                    }
+
                     PendingIntent showPi = PendingIntent.getActivity(
                             context,
                             requestCode + 100000,
                             showIntent,
-                            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+                            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE,
+                            optionsBundle
                     );
                     AlarmManager.AlarmClockInfo clockInfo = new AlarmManager.AlarmClockInfo(snoozeTrigger, showPi);
-                    am.setAlarmClock(clockInfo, pi);
+                    try {
+                        am.setAlarmClock(clockInfo, pi);
+                    } catch (SecurityException se) {
+                        am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, snoozeTrigger, pi);
+                    }
                 } else {
                     am.setExact(AlarmManager.RTC_WAKEUP, snoozeTrigger, pi);
                 }
@@ -93,7 +111,18 @@ public class AlarmReceiver extends BroadcastReceiver {
             return;
         }
 
-        // 1. Start foreground alarm service for continuous audio / TTS
+        // 1. Post notification immediately with full-screen intent so Android OS wakes the display
+        try {
+            android.app.Notification notification = AlarmNotificationHelper.createNotification(context, intent);
+            android.app.NotificationManager nm = (android.app.NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm != null) {
+                nm.notify(AlarmNotificationHelper.NOTIFICATION_ID, notification);
+            }
+        } catch (Exception e) {
+            Log.e("VOICE_CLOCK", "Failed to post alarm notification directly", e);
+        }
+
+        // 2. Start foreground alarm service for continuous audio / TTS
         Intent serviceIntent = new Intent(context, AlarmService.class);
         serviceIntent.setAction("START_ALARM");
         if (intent.getExtras() != null) {
@@ -101,7 +130,7 @@ public class AlarmReceiver extends BroadcastReceiver {
         }
         ContextCompat.startForegroundService(context, serviceIntent);
 
-        // 2. Directly launch full-screen AlarmActivity to turn on screen and show Snooze/Dismiss UI
+        // 3. Directly launch full-screen AlarmActivity to turn on screen and show Snooze/Dismiss UI
         Intent alarmIntent = new Intent(context, AlarmActivity.class);
         if (intent.getExtras() != null) {
             alarmIntent.putExtras(intent.getExtras());
@@ -114,9 +143,19 @@ public class AlarmReceiver extends BroadcastReceiver {
         );
 
         try {
-            context.startActivity(alarmIntent);
+            android.os.Bundle options = null;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                android.app.ActivityOptions actOpt = android.app.ActivityOptions.makeBasic();
+                actOpt.setPendingIntentBackgroundActivityStartMode(android.app.ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED);
+                options = actOpt.toBundle();
+            }
+            if (options != null) {
+                context.startActivity(alarmIntent, options);
+            } else {
+                context.startActivity(alarmIntent);
+            }
         } catch (Exception e) {
-            Log.e("VOICE_CLOCK", "Failed to start AlarmActivity from AlarmReceiver", e);
+            Log.w("VOICE_CLOCK", "Direct startActivity from AlarmReceiver blocked or failed (handled by fullScreenIntent)", e);
         }
     }
 }

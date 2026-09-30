@@ -30,15 +30,19 @@ public class AlarmActivity extends Activity {
     private String label;
     private String type;
     private String text;
+    private String voice;
     private Handler timeHandler;
     private Runnable timeRunnable;
     private TextView clockView;
     private Vibrator vibrator;
     private BroadcastReceiver screenOffReceiver;
     private PowerManager.WakeLock activityWakeLock;
+    private long createTimestamp = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        createTimestamp = System.currentTimeMillis();
+
         PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
         if (pm != null) {
             try {
@@ -46,7 +50,7 @@ public class AlarmActivity extends Activity {
                         PowerManager.SCREEN_BRIGHT_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP | PowerManager.ON_AFTER_RELEASE,
                         "VoiceClock:AlarmActivityWake"
                 );
-                activityWakeLock.acquire(45000);
+                activityWakeLock.acquire(60000);
             } catch (Exception ignored) {}
         }
 
@@ -75,6 +79,7 @@ public class AlarmActivity extends Activity {
         label = getIntent().getStringExtra("label");
         type = getIntent().getStringExtra("type");
         text = getIntent().getStringExtra("text");
+        voice = getIntent().getStringExtra("voice");
 
         // Start repeating vibration if enabled in user settings
         if (AlarmPreferences.isTimerVibrate(this)) {
@@ -98,6 +103,9 @@ public class AlarmActivity extends Activity {
             @Override
             public void onReceive(Context context, Intent intent) {
                 if (intent != null && Intent.ACTION_SCREEN_OFF.equals(intent.getAction())) {
+                    if (System.currentTimeMillis() - createTimestamp < 4000) {
+                        return; // Ignore screen-off broadcast during initial wake transition
+                    }
                     String powerAction = AlarmPreferences.getPowerButtonAction(AlarmActivity.this);
                     if ("Dismiss".equalsIgnoreCase(powerAction)) {
                         performDismiss();
@@ -106,14 +114,14 @@ public class AlarmActivity extends Activity {
             }
         };
 
-        // Delay receiver registration by 2.5 seconds so initial wake-up doesn't trigger accidental dismiss
+        // Delay receiver registration so initial wake-up doesn't trigger accidental dismiss
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             try {
                 if (!isFinishing() && !isDestroyed()) {
                     registerReceiver(screenOffReceiver, new IntentFilter(Intent.ACTION_SCREEN_OFF));
                 }
             } catch (Exception ignored) {}
-        }, 2500);
+        }, 4000);
 
         clockView = findViewById(R.id.alarmClock);
         TextView titleView = findViewById(R.id.alarmTitle);
@@ -289,6 +297,7 @@ public class AlarmActivity extends Activity {
         i.putExtra("label", label);
         i.putExtra("type", type);
         i.putExtra("text", text);
+        i.putExtra("voice", voice);
 
         AlarmManager am = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
         if (am != null) {
@@ -307,19 +316,33 @@ public class AlarmActivity extends Activity {
                     showIntent.putExtra("label", label);
                     showIntent.putExtra("type", type);
                     showIntent.putExtra("text", text);
+                    showIntent.putExtra("voice", voice);
                     showIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+
+                    android.os.Bundle optionsBundle = null;
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                        android.app.ActivityOptions options = android.app.ActivityOptions.makeBasic();
+                        options.setPendingIntentBackgroundActivityStartMode(android.app.ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED);
+                        optionsBundle = options.toBundle();
+                    }
+
                     PendingIntent showPi = PendingIntent.getActivity(
                             this,
                             reqCode + 100000,
                             showIntent,
-                            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+                            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE,
+                            optionsBundle
                     );
                     AlarmManager.AlarmClockInfo clockInfo = new AlarmManager.AlarmClockInfo(trigger, showPi);
-                    am.setAlarmClock(clockInfo, pi);
+                    try {
+                        am.setAlarmClock(clockInfo, pi);
+                    } catch (SecurityException se) {
+                        am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, trigger, pi);
+                    }
                 } else {
                     am.setExact(AlarmManager.RTC_WAKEUP, trigger, pi);
                 }
-            } catch (SecurityException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }

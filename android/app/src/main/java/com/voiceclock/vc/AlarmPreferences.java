@@ -18,9 +18,14 @@ public class AlarmPreferences {
         public String label;
         public String type;
         public String text;
+        public String voice;
     }
 
     public static synchronized void saveAlarm(Context context, String id, long triggerTime, String label, String type, String text) {
+        saveAlarm(context, id, triggerTime, label, type, text, "female_1");
+    }
+
+    public static synchronized void saveAlarm(Context context, String id, long triggerTime, String label, String type, String text, String voice) {
         try {
             SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
             String jsonStr = prefs.getString(KEY_ALARMS, "[]");
@@ -40,6 +45,7 @@ public class AlarmPreferences {
             newObj.put("label", label);
             newObj.put("type", type);
             newObj.put("text", text);
+            newObj.put("voice", (voice != null && !voice.trim().isEmpty()) ? voice : "female_1");
             newArr.put(newObj);
 
             prefs.edit().putString(KEY_ALARMS, newArr.toString()).apply();
@@ -135,6 +141,7 @@ public class AlarmPreferences {
                 a.label = obj.optString("label");
                 a.type = obj.optString("type");
                 a.text = obj.optString("text");
+                a.voice = obj.optString("voice", "female_1");
                 list.add(a);
             }
         } catch (Exception e) {

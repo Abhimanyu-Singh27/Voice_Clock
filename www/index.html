@@ -104,6 +104,23 @@
           </div>
           <textarea placeholder="Alarm Name (Optional)" id="alarmName" class="adjstwdth" rows="2"></textarea>
           <textarea id="ttsText" placeholder="Alarm message for Text to Speech" class="adjstwdth" rows="2"></textarea>
+          <div class="voice-select-group" id="alarmVoiceGroup">
+            <label class="voice-select-label" for="alarmVoice" id="alarmVoiceLabel">Choose Voice:</label>
+            <div class="voice-select-row">
+              <select id="alarmVoice" class="option-bgc voice-dropdown adjstwdth">
+                <option value="female_1">Aria (Female - Clear &amp; Soft)</option>
+                <option value="male_1">Guy (Male - Deep &amp; Bold)</option>
+                <option value="female_2">Jenny (Female - Friendly &amp; Bright)</option>
+                <option value="male_2">David (Male - Calm &amp; Confident)</option>
+                <option value="female_in">Pooja (Female - Warm Indian Accent)</option>
+                <option value="male_in">Rohan (Male - Gentle Indian Accent)</option>
+              </select>
+              <button type="button" class="btn-preview-voice" id="btnPreviewAlarmVoice" title="Listen Voice">
+                <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                <span>Listen</span>
+              </button>
+            </div>
+          </div>
           <select id="alarmRepeat">
             <option value="once">Select Repetition Time (Optional)</option>
             <option value="once">Once</option>
@@ -159,7 +176,23 @@
           </div>
           <textarea placeholder="Alarm Name (Optional)" id="editAlarmName" class="adjstwdth" rows="2"></textarea>
           <textarea id="editTtsText" placeholder="Alarm message for Text to Speech" class="adjstwdth" rows="2"></textarea>
-          
+          <div class="voice-select-group" id="editAlarmVoiceGroup">
+            <label class="voice-select-label" for="editAlarmVoice" id="editAlarmVoiceLabel">Choose Voice:</label>
+            <div class="voice-select-row">
+              <select id="editAlarmVoice" class="option-bgc voice-dropdown adjstwdth">
+                <option value="female_1">Aria (Female - Clear &amp; Soft)</option>
+                <option value="male_1">Guy (Male - Deep &amp; Bold)</option>
+                <option value="female_2">Jenny (Female - Friendly &amp; Bright)</option>
+                <option value="male_2">David (Male - Calm &amp; Confident)</option>
+                <option value="female_in">Pooja (Female - Warm Indian Accent)</option>
+                <option value="male_in">Rohan (Male - Gentle Indian Accent)</option>
+              </select>
+              <button type="button" class="btn-preview-voice" id="btnPreviewEditAlarmVoice" title="Listen Voice">
+                <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                <span>Listen</span>
+              </button>
+            </div>
+          </div>
           <select id="editAlarmRepeat">
             <option value="once">Once</option>
             <option value="1 min">Every 1 min</option>
@@ -240,6 +273,23 @@
 
         <div class="card form-card">
           <input id="taskTitle" placeholder="Task Message" class="adjstwdth">
+          <div class="voice-select-group" id="taskVoiceGroup">
+            <label class="voice-select-label" for="taskVoice" id="taskVoiceLabel">Choose Voice:</label>
+            <div class="voice-select-row">
+              <select id="taskVoice" class="option-bgc voice-dropdown adjstwdth">
+                <option value="female_1">Aria (Female - Clear &amp; Soft)</option>
+                <option value="male_1">Guy (Male - Deep &amp; Bold)</option>
+                <option value="female_2">Jenny (Female - Friendly &amp; Bright)</option>
+                <option value="male_2">David (Male - Calm &amp; Confident)</option>
+                <option value="female_in">Pooja (Female - Warm Indian Accent)</option>
+                <option value="male_in">Rohan (Male - Gentle Indian Accent)</option>
+              </select>
+              <button type="button" class="btn-preview-voice" id="btnPreviewTaskVoice" title="Listen Voice">
+                <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                <span>Listen</span>
+              </button>
+            </div>
+          </div>
           <div class="date-wrapper">
             <input id="taskTime" type="datetime-local" class="adjstwdth">
             <span class="fake-placeholder" id="taskDatePlaceholder">Set Time and Date</span>
@@ -291,6 +341,23 @@
 
         <div class="card form-card">
           <input id="editTaskTitle" placeholder="Task Message" class="adjstwdth">
+          <div class="voice-select-group" id="editTaskVoiceGroup">
+            <label class="voice-select-label" for="editTaskVoice" id="editTaskVoiceLabel">Choose Voice:</label>
+            <div class="voice-select-row">
+              <select id="editTaskVoice" class="option-bgc voice-dropdown adjstwdth">
+                <option value="female_1">Aria (Female - Clear &amp; Soft)</option>
+                <option value="male_1">Guy (Male - Deep &amp; Bold)</option>
+                <option value="female_2">Jenny (Female - Friendly &amp; Bright)</option>
+                <option value="male_2">David (Male - Calm &amp; Confident)</option>
+                <option value="female_in">Pooja (Female - Warm Indian Accent)</option>
+                <option value="male_in">Rohan (Male - Gentle Indian Accent)</option>
+              </select>
+              <button type="button" class="btn-preview-voice" id="btnPreviewEditTaskVoice" title="Listen Voice">
+                <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                <span>Listen</span>
+              </button>
+            </div>
+          </div>
           <div class="date-wrapper">
             <input id="editTaskTime" type="datetime-local" class="adjstwdth">
             <span class="fake-placeholder" id="editTaskDatePlaceholder">Set Time and Date</span>

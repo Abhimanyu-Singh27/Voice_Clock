@@ -14,7 +14,7 @@ import androidx.core.app.NotificationCompat;
 
 public class AlarmNotificationHelper {
 
-    public static final String CHANNEL_ID = "voice_clock_alarm_channel_v3";
+    public static final String CHANNEL_ID = "voice_clock_alarm_channel_v4";
     public static final int NOTIFICATION_ID = 1001;
 
     public static Notification createNotification(Context context, Intent alarmIntent) {
@@ -64,12 +64,22 @@ public class AlarmNotificationHelper {
                         | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
         );
 
+        android.os.Bundle optionsBundle = null;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            android.app.ActivityOptions options = android.app.ActivityOptions.makeBasic();
+            options.setPendingIntentBackgroundActivityStartMode(android.app.ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED);
+            optionsBundle = options.toBundle();
+        }
+
+        int reqCode = (alarmId != null) ? alarmId.hashCode() : 1001;
+
         PendingIntent fullScreenPendingIntent =
                 PendingIntent.getActivity(
                         context,
-                        1001,
+                        reqCode,
                         openIntent,
-                        PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+                        PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE,
+                        optionsBundle
                 );
 
         // Action: Dismiss

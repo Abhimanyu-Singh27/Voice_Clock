@@ -225,6 +225,67 @@ button:active {
   display: none !important;
 }
 
+.voice-select-group {
+  width: 100%;
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.voice-select-label {
+  font-size: 13px;
+  color: var(--muted, #94a3b8);
+  font-weight: 500;
+  text-align: left;
+}
+
+.voice-select-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.voice-dropdown {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  background: var(--card-bg, #1e293b);
+  color: var(--text, #f8fafc);
+  border: 1px solid var(--border, #334155);
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+}
+
+.btn-preview-voice {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  height: 40px;
+  margin-top: 0 !important;
+}
+
+.btn-preview-voice:hover,
+.btn-preview-voice:active {
+  background: rgba(59, 130, 246, 0.28);
+  border-color: #60a5fa;
+  color: #ffffff;
+  transform: scale(0.98);
+}
+
 /* ================= ALARMS & TASKS HISTORY LIST (matching alarm_image.jpeg) ================= */
 .alarm-history-list {
   display: flex;

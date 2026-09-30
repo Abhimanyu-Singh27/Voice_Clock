@@ -13,8 +13,10 @@ import android.os.Build;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.speech.tts.TextToSpeech;
+import android.speech.tts.Voice;
 import android.util.Log;
 import java.util.Locale;
+import java.util.Set;
 
 public class AlarmService extends Service {
 
@@ -167,7 +169,17 @@ public class AlarmService extends Service {
         );
 
         try {
-            startActivity(alarmIntent);
+            android.os.Bundle options = null;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                android.app.ActivityOptions actOpt = android.app.ActivityOptions.makeBasic();
+                actOpt.setPendingIntentBackgroundActivityStartMode(android.app.ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED);
+                options = actOpt.toBundle();
+            }
+            if (options != null) {
+                startActivity(alarmIntent, options);
+            } else {
+                startActivity(alarmIntent);
+            }
         } catch (Exception e) {
             Log.e("VOICE_CLOCK", "Failed to launch AlarmActivity", e);
         }
@@ -175,19 +187,10 @@ public class AlarmService extends Service {
         String type = intent.getStringExtra("type");
         String label = intent.getStringExtra("label");
         String text = intent.getStringExtra("text");
+        String voice = intent.getStringExtra("voice");
+        final String selectedVoice = (voice != null && !voice.trim().isEmpty()) ? voice : "female_1";
 
         if ("tts".equals(type) || "task".equals(type)) {
-
-            // Immediate audio chime while TTS initializes so device rings instantly
-            try {
-                Uri chimeUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-                if (chimeUri == null) chimeUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
-                MediaPlayer introBeep = MediaPlayer.create(this, chimeUri);
-                if (introBeep != null) {
-                    introBeep.setOnCompletionListener(MediaPlayer::release);
-                    introBeep.start();
-                }
-            } catch (Exception ignored) {}
 
             String speakText =
                     (text == null || text.trim().isEmpty())
@@ -198,7 +201,7 @@ public class AlarmService extends Service {
 
                 if (status == TextToSpeech.SUCCESS && textToSpeech != null) {
 
-                    textToSpeech.setLanguage(Locale.getDefault());
+                    configureTtsVoice(textToSpeech, selectedVoice, speakText);
 
                     textToSpeech.setOnUtteranceProgressListener(new android.speech.tts.UtteranceProgressListener() {
                         @Override
@@ -208,6 +211,7 @@ public class AlarmService extends Service {
                         public void onDone(String utteranceId) {
                             new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
                                 if (textToSpeech != null) {
+                                    configureTtsVoice(textToSpeech, selectedVoice, speakText);
                                     textToSpeech.speak(
                                             speakText,
                                             TextToSpeech.QUEUE_FLUSH,
@@ -287,6 +291,92 @@ public class AlarmService extends Service {
         stopForeground(true);
         releaseWakeLocks();
         stopSelf();
+    }
+
+    private void configureTtsVoice(TextToSpeech tts, String voiceId, String text) {
+        if (tts == null) return;
+
+        boolean isHindi = isTextHindi(text) || "hi".equalsIgnoreCase(AlarmPreferences.getAppLanguage(this));
+        Locale targetLocale = isHindi ? new Locale("hi", "IN") : Locale.US;
+
+        float pitch = 1.0f;
+        float rate = 1.0f;
+        boolean preferFemale = true;
+
+        if ("male_1".equals(voiceId)) {
+            pitch = 0.78f;
+            rate = 0.95f;
+            preferFemale = false;
+        } else if ("female_2".equals(voiceId)) {
+            pitch = 1.30f;
+            rate = 1.05f;
+            preferFemale = true;
+        } else if ("male_2".equals(voiceId)) {
+            pitch = 0.85f;
+            rate = 1.0f;
+            preferFemale = false;
+        } else if ("female_in".equals(voiceId)) {
+            targetLocale = isHindi ? new Locale("hi", "IN") : new Locale("en", "IN");
+            pitch = 1.15f;
+            rate = 1.0f;
+            preferFemale = true;
+        } else if ("male_in".equals(voiceId)) {
+            targetLocale = isHindi ? new Locale("hi", "IN") : new Locale("en", "IN");
+            pitch = 0.82f;
+            rate = 0.98f;
+            preferFemale = false;
+        } else { // "female_1"
+            pitch = 1.18f;
+            rate = 1.0f;
+            preferFemale = true;
+        }
+
+        try {
+            tts.setLanguage(targetLocale);
+        } catch (Exception ignored) {}
+
+        tts.setPitch(pitch);
+        tts.setSpeechRate(rate);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            try {
+                Set<Voice> voices = tts.getVoices();
+                if (voices != null && !voices.isEmpty()) {
+                    Voice bestMatch = null;
+                    for (Voice v : voices) {
+                        if (v == null || v.getName() == null) continue;
+                        String vName = v.getName().toLowerCase(Locale.ROOT);
+                        Locale vLoc = v.getLocale();
+                        if (vLoc != null && vLoc.getLanguage().equalsIgnoreCase(targetLocale.getLanguage())) {
+                            boolean isFem = vName.contains("female") || vName.contains("#female") || vName.contains("-fem") || vName.contains("f0") || vName.contains("f1");
+                            boolean isMal = vName.contains("male") || vName.contains("#male") || vName.contains("-mal") || vName.contains("m0") || vName.contains("m1");
+                            if (preferFemale && isFem) {
+                                bestMatch = v;
+                                break;
+                            } else if (!preferFemale && isMal) {
+                                bestMatch = v;
+                                break;
+                            } else if (bestMatch == null) {
+                                bestMatch = v;
+                            }
+                        }
+                    }
+                    if (bestMatch != null) {
+                        tts.setVoice(bestMatch);
+                    }
+                }
+            } catch (Exception e) {
+                Log.w("VOICE_CLOCK", "Could not set custom system Voice object", e);
+            }
+        }
+    }
+
+    private boolean isTextHindi(String text) {
+        if (text == null) return false;
+        for (char c : text.toCharArray()) {
+            if (c >= 0x0900 && c <= 0x097F) return true;
+        }
+        return false;
     }
 
     @Override

@@ -10,11 +10,14 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.PowerManager;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
+import android.speech.tts.TextToSpeech;
+import android.speech.tts.Voice;
 import android.view.KeyEvent;
 import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
@@ -28,6 +31,7 @@ import androidx.core.content.ContextCompat;
 import com.getcapacitor.BridgeActivity;
 import java.util.ArrayList;
 import java.util.Locale;
+import java.util.Set;
 
 public class MainActivity extends BridgeActivity {
 
@@ -38,6 +42,7 @@ public class MainActivity extends BridgeActivity {
     private boolean isAlarmRinging = false;
     private SpeechRecognizer activeSpeechRecognizer;
     private String pendingVoiceLang = "hi-IN";
+    private TextToSpeech mainTts;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -142,12 +147,15 @@ public class MainActivity extends BridgeActivity {
                     long triggerAtMillis,
                     String label,
                     String type,
-                    String text
+                    String text,
+                    String voice
             ) {
-                AlarmPreferences.saveAlarm(MainActivity.this, alarmId, triggerAtMillis, label, type, text);
+                final String selectedVoice = (voice != null && !voice.trim().isEmpty()) ? voice : "female_1";
+                AlarmPreferences.saveAlarm(MainActivity.this, alarmId, triggerAtMillis, label, type, text, selectedVoice);
 
                 AlarmManager alarmManager =
                         (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+                if (alarmManager == null) return;
 
                 Intent intent =
                         new Intent(MainActivity.this, AlarmReceiver.class);
@@ -156,15 +164,17 @@ public class MainActivity extends BridgeActivity {
                 intent.putExtra("label", label);
                 intent.putExtra("type", type);
                 intent.putExtra("text", text);
+                intent.putExtra("voice", selectedVoice);
                 intent.putExtra(
                         "mode",
                         "task".equals(type) ? "task" : "alarm"
                 );
 
+                int reqCode = alarmId.hashCode();
                 PendingIntent pi =
                         PendingIntent.getBroadcast(
                                 MainActivity.this,
-                                alarmId.hashCode(),
+                                reqCode,
                                 intent,
                                 PendingIntent.FLAG_UPDATE_CURRENT
                                         | PendingIntent.FLAG_IMMUTABLE
@@ -176,20 +186,37 @@ public class MainActivity extends BridgeActivity {
                     showIntent.putExtra("label", label);
                     showIntent.putExtra("type", type);
                     showIntent.putExtra("text", text);
+                    showIntent.putExtra("voice", selectedVoice);
                     showIntent.putExtra("mode", "task".equals(type) ? "task" : "alarm");
                     showIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
+                    android.os.Bundle optionsBundle = null;
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                        android.app.ActivityOptions options = android.app.ActivityOptions.makeBasic();
+                        options.setPendingIntentBackgroundActivityStartMode(android.app.ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED);
+                        optionsBundle = options.toBundle();
+                    }
+
                     PendingIntent showPi = PendingIntent.getActivity(
                             MainActivity.this,
-                            alarmId.hashCode() + 100000,
+                            reqCode + 100000,
                             showIntent,
-                            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+                            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE,
+                            optionsBundle
                     );
 
                     AlarmManager.AlarmClockInfo clockInfo =
                             new AlarmManager.AlarmClockInfo(triggerAtMillis, showPi);
 
-                    alarmManager.setAlarmClock(clockInfo, pi);
+                    try {
+                        alarmManager.setAlarmClock(clockInfo, pi);
+                    } catch (SecurityException se) {
+                        try {
+                            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pi);
+                        } catch (Exception e) {
+                            alarmManager.set(AlarmManager.RTC_WAKEUP, triggerAtMillis, pi);
+                        }
+                    }
                 } else {
                     alarmManager.setExact(
                             AlarmManager.RTC_WAKEUP,
@@ -197,6 +224,17 @@ public class MainActivity extends BridgeActivity {
                             pi
                     );
                 }
+            }
+
+            @JavascriptInterface
+            public void scheduleAlarm(
+                    String alarmId,
+                    long triggerAtMillis,
+                    String label,
+                    String type,
+                    String text
+            ) {
+                scheduleAlarm(alarmId, triggerAtMillis, label, type, text, "female_1");
             }
 
             @JavascriptInterface
@@ -469,6 +507,56 @@ public class MainActivity extends BridgeActivity {
                 runOnUiThread(() -> moveTaskToBack(true));
             }
 
+            @JavascriptInterface
+            public void playNativeTTS(String text, String voiceId, String lang) {
+                runOnUiThread(() -> speakNativeTts(text, voiceId, lang));
+            }
+
+            @JavascriptInterface
+            public void stopNativeTTS() {
+                runOnUiThread(() -> {
+                    if (mainTts != null) {
+                        try { mainTts.stop(); } catch (Exception ignored) {}
+                    }
+                });
+            }
+
+            @JavascriptInterface
+            public void checkAndRequestExactAlarmPermission() {
+                runOnUiThread(() -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        AlarmManager am = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+                        if (am != null && !am.canScheduleExactAlarms()) {
+                            try {
+                                Intent intent = new Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
+                                intent.setData(android.net.Uri.parse("package:" + getPackageName()));
+                                startActivity(intent);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                });
+            }
+
+            @JavascriptInterface
+            public void checkAndRequestBatteryOptimization() {
+                runOnUiThread(() -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+                        if (pm != null && !pm.isIgnoringBatteryOptimizations(getPackageName())) {
+                            try {
+                                Intent intent = new Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+                                intent.setData(android.net.Uri.parse("package:" + getPackageName()));
+                                startActivity(intent);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                });
+            }
+
         }, "AndroidVoice");
     }
 
@@ -588,9 +676,119 @@ public class MainActivity extends BridgeActivity {
         }
     }
 
+    private void speakNativeTts(String text, String voiceId, String lang) {
+        if (text == null || text.trim().isEmpty()) return;
+        final String fVoice = (voiceId != null && !voiceId.trim().isEmpty()) ? voiceId : "female_1";
+        final String fLang = (lang != null && !lang.trim().isEmpty()) ? lang : "hi-IN";
+
+        if (mainTts != null) {
+            try {
+                mainTts.stop();
+            } catch (Exception ignored) {}
+            configureAndSpeak(mainTts, text, fVoice, fLang);
+        } else {
+            mainTts = new TextToSpeech(this, status -> {
+                if (status == TextToSpeech.SUCCESS && mainTts != null) {
+                    configureAndSpeak(mainTts, text, fVoice, fLang);
+                }
+            });
+        }
+    }
+
+    private void configureAndSpeak(TextToSpeech tts, String text, String voiceId, String lang) {
+        boolean isHindi = isTextHindi(text) || lang.toLowerCase().startsWith("hi");
+        Locale targetLocale = isHindi ? new Locale("hi", "IN") : Locale.US;
+
+        float pitch = 1.0f;
+        float rate = 1.0f;
+        boolean preferFemale = true;
+
+        if ("male_1".equals(voiceId)) {
+            pitch = 0.78f;
+            rate = 0.95f;
+            preferFemale = false;
+        } else if ("female_2".equals(voiceId)) {
+            pitch = 1.30f;
+            rate = 1.05f;
+            preferFemale = true;
+        } else if ("male_2".equals(voiceId)) {
+            pitch = 0.85f;
+            rate = 1.0f;
+            preferFemale = false;
+        } else if ("female_in".equals(voiceId)) {
+            targetLocale = isHindi ? new Locale("hi", "IN") : new Locale("en", "IN");
+            pitch = 1.15f;
+            rate = 1.0f;
+            preferFemale = true;
+        } else if ("male_in".equals(voiceId)) {
+            targetLocale = isHindi ? new Locale("hi", "IN") : new Locale("en", "IN");
+            pitch = 0.82f;
+            rate = 0.98f;
+            preferFemale = false;
+        } else { // "female_1"
+            pitch = 1.18f;
+            rate = 1.0f;
+            preferFemale = true;
+        }
+
+        try {
+            tts.setLanguage(targetLocale);
+        } catch (Exception ignored) {}
+
+        tts.setPitch(pitch);
+        tts.setSpeechRate(rate);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            try {
+                Set<Voice> voices = tts.getVoices();
+                if (voices != null && !voices.isEmpty()) {
+                    Voice bestMatch = null;
+                    for (Voice v : voices) {
+                        if (v == null || v.getName() == null) continue;
+                        String vName = v.getName().toLowerCase(Locale.ROOT);
+                        Locale vLoc = v.getLocale();
+                        if (vLoc != null && vLoc.getLanguage().equalsIgnoreCase(targetLocale.getLanguage())) {
+                            boolean isFem = vName.contains("female") || vName.contains("#female") || vName.contains("-fem") || vName.contains("f0") || vName.contains("f1");
+                            boolean isMal = vName.contains("male") || vName.contains("#male") || vName.contains("-mal") || vName.contains("m0") || vName.contains("m1");
+                            if (preferFemale && isFem) {
+                                bestMatch = v;
+                                break;
+                            } else if (!preferFemale && isMal) {
+                                bestMatch = v;
+                                break;
+                            } else if (bestMatch == null) {
+                                bestMatch = v;
+                            }
+                        }
+                    }
+                    if (bestMatch != null) {
+                        tts.setVoice(bestMatch);
+                    }
+                }
+            } catch (Exception ignored) {}
+        }
+
+        tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "MAIN_TTS");
+    }
+
+    private boolean isTextHindi(String text) {
+        if (text == null) return false;
+        for (char c : text.toCharArray()) {
+            if (c >= 0x0900 && c <= 0x097F) return true;
+        }
+        return false;
+    }
+
     @Override
     public void onDestroy() {
         stopAlarmVibration();
+        if (mainTts != null) {
+            try {
+                mainTts.stop();
+                mainTts.shutdown();
+            } catch (Exception ignored) {}
+            mainTts = null;
+        }
         if (screenOffReceiver != null) {
             try {
                 unregisterReceiver(screenOffReceiver);
