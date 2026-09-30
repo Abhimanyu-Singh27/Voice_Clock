@@ -3274,8 +3274,15 @@ function initVoiceClockApp() {
         const id = btn.dataset.id;
         stopAlarmAudio(id);
 
+        if (window.AndroidVoice && window.AndroidVoice.stopAlarmService) {
+          window.AndroidVoice.stopAlarmService();
+        }
         if (window.AndroidVoice && window.AndroidVoice.cancelAlarm) {
           window.AndroidVoice.cancelAlarm(id);
+        }
+        if (currentActiveAlarmId === id) {
+          currentActiveAlarmId = null;
+          alarmModal?.classList.remove('show');
         }
 
         const deleted = alarms.find(a => a.id === id);
@@ -3385,8 +3392,15 @@ function initVoiceClockApp() {
     if (!currentEditingAlarmId) return;
     const id = currentEditingAlarmId;
     stopAlarmAudio(id);
+    if (window.AndroidVoice && window.AndroidVoice.stopAlarmService) {
+      window.AndroidVoice.stopAlarmService();
+    }
     if (window.AndroidVoice && window.AndroidVoice.cancelAlarm) {
       window.AndroidVoice.cancelAlarm(id);
+    }
+    if (currentActiveAlarmId === id) {
+      currentActiveAlarmId = null;
+      alarmModal?.classList.remove('show');
     }
     alarms = alarms.filter(a => a.id !== id);
     saveAlarms();
@@ -3555,24 +3569,30 @@ function initVoiceClockApp() {
       if (window.AndroidVoice.stopAlarmVibrationNative) {
         window.AndroidVoice.stopAlarmVibrationNative();
       }
+      if (window.AndroidVoice.stopNativeTTS) {
+        window.AndroidVoice.stopNativeTTS();
+      }
       if (window.AndroidVoice.setAlarmRinging) {
         window.AndroidVoice.setAlarmRinging(false);
       }
     }
 
-    const al = alarms.find(x => x.id === id);
-    if (!al) return;
-
-    al.ringing = false;
-    if (al.loopTimeout) {
-      clearTimeout(al.loopTimeout);
-      al.loopTimeout = null;
-    }
-    if (al.audioObj) {
-      al.audioObj.pause();
-      al.audioObj.currentTime = 0;
-      al.audioObj = null;
-    }
+    alarms.forEach(al => {
+      if (!id || al.id === id) {
+        al.ringing = false;
+        if (al.loopTimeout) {
+          clearTimeout(al.loopTimeout);
+          al.loopTimeout = null;
+        }
+        if (al.audioObj) {
+          try {
+            al.audioObj.pause();
+            al.audioObj.currentTime = 0;
+          } catch (e) {}
+          al.audioObj = null;
+        }
+      }
+    });
   }
 
   // -------------------- SLIDER SWIPE GESTURE HANDLER --------------------
@@ -3692,13 +3712,15 @@ function initVoiceClockApp() {
     });
   }
 
-  function handleAlarmSnooze() {
-    const alarmId = currentActiveAlarmId;
+  function snoozeAlarmById(alarmId) {
     if (!alarmId) return;
     const al = alarms.find(a => a.id === alarmId);
     if (!al) return;
 
     stopAlarmAudio(alarmId);
+    if (window.AndroidVoice && window.AndroidVoice.stopAlarmService) {
+      window.AndroidVoice.stopAlarmService();
+    }
     if (window.AndroidVoice && window.AndroidVoice.cancelAlarm) {
       window.AndroidVoice.cancelAlarm(alarmId);
     }
@@ -3707,7 +3729,6 @@ function initVoiceClockApp() {
     const snoozeTime = Date.now() + (snoozeMins * 60 * 1000);
     al.ringing = false;
     al.snoozedUntil = snoozeTime;
-    // CRITICAL: Do NOT overwrite al.time! Keep original scheduled time!
     al.enabled = true;
     saveAlarms();
 
@@ -3725,15 +3746,16 @@ function initVoiceClockApp() {
       window.AndroidVoice.syncAlarmSnooze(al.id, snoozeTime);
     }
 
-    currentActiveAlarmId = null;
-    alarmModal?.classList.remove('show');
+    if (currentActiveAlarmId === alarmId) {
+      currentActiveAlarmId = null;
+      alarmModal?.classList.remove('show');
+    }
     renderAlarms();
     const isHi = userSettings.appLanguage === 'hi';
     showPopup(isHi ? `अलार्म ${snoozeMins} मिनट के लिए स्नूज़ किया गया` : `Alarm snoozed for ${snoozeMins} minutes`, 'snooze');
   }
 
-  function handleAlarmDismiss() {
-    const alarmId = currentActiveAlarmId;
+  function dismissAlarmById(alarmId) {
     if (!alarmId) return;
     const al = alarms.find(a => a.id === alarmId);
     if (!al) return;
@@ -3809,16 +3831,29 @@ function initVoiceClockApp() {
       }
     } else {
       al.enabled = false;
+      if (window.AndroidVoice && window.AndroidVoice.cancelAlarm) {
+        window.AndroidVoice.cancelAlarm(al.id);
+      }
     }
 
     saveAlarms();
-    currentActiveAlarmId = null;
-    alarmModal?.classList.remove('show');
+    if (currentActiveAlarmId === alarmId) {
+      currentActiveAlarmId = null;
+      alarmModal?.classList.remove('show');
+    }
     alarmFormView?.classList.add('hidden');
     alarmListView?.classList.remove('hidden');
     renderAlarms();
     const isHi = userSettings.appLanguage === 'hi';
     showPopup(isHi ? 'अलार्म बंद किया गया' : 'Alarm dismissed', 'dismissed');
+  }
+
+  function handleAlarmSnooze() {
+    snoozeAlarmById(currentActiveAlarmId);
+  }
+
+  function handleAlarmDismiss() {
+    dismissAlarmById(currentActiveAlarmId);
   }
 
   // Setup interactive slider gesture for Alarm Modal
@@ -4061,8 +4096,15 @@ function initVoiceClockApp() {
         const id = btn.dataset.id;
         stopTaskAudio(id);
 
+        if (window.AndroidVoice && window.AndroidVoice.stopAlarmService) {
+          window.AndroidVoice.stopAlarmService();
+        }
         if (window.AndroidVoice && window.AndroidVoice.cancelAlarm) {
           window.AndroidVoice.cancelAlarm(id);
+        }
+        if (currentActiveTaskId === id) {
+          currentActiveTaskId = null;
+          taskModal?.classList.remove('show');
         }
 
         const deleted = tasks.find(x => x.id === id);
@@ -4144,8 +4186,15 @@ function initVoiceClockApp() {
     if (!currentEditingTaskId) return;
     const id = currentEditingTaskId;
     stopTaskAudio(id);
+    if (window.AndroidVoice && window.AndroidVoice.stopAlarmService) {
+      window.AndroidVoice.stopAlarmService();
+    }
     if (window.AndroidVoice && window.AndroidVoice.cancelAlarm) {
       window.AndroidVoice.cancelAlarm(id);
+    }
+    if (currentActiveTaskId === id) {
+      currentActiveTaskId = null;
+      taskModal?.classList.remove('show');
     }
     tasks = tasks.filter(x => x.id !== id);
     saveTasks();
@@ -4286,33 +4335,41 @@ function initVoiceClockApp() {
       if (window.AndroidVoice.stopAlarmVibrationNative) {
         window.AndroidVoice.stopAlarmVibrationNative();
       }
+      if (window.AndroidVoice.stopNativeTTS) {
+        window.AndroidVoice.stopNativeTTS();
+      }
       if (window.AndroidVoice.setAlarmRinging) {
         window.AndroidVoice.setAlarmRinging(false);
       }
     }
 
-    const t = tasks.find(x => x.id === id);
-    if (!t) return;
-
-    t.ringing = false;
-    if (t.loopTimeout) {
-      clearTimeout(t.loopTimeout);
-      t.loopTimeout = null;
-    }
-    if (t.audioObj) {
-      t.audioObj.pause();
-      t.audioObj.currentTime = 0;
-      t.audioObj = null;
-    }
+    tasks.forEach(t => {
+      if (!id || t.id === id) {
+        t.ringing = false;
+        if (t.loopTimeout) {
+          clearTimeout(t.loopTimeout);
+          t.loopTimeout = null;
+        }
+        if (t.audioObj) {
+          try {
+            t.audioObj.pause();
+            t.audioObj.currentTime = 0;
+          } catch (e) {}
+          t.audioObj = null;
+        }
+      }
+    });
   }
 
-  function handleTaskSnooze() {
-    const taskId = currentActiveTaskId;
+  function snoozeTaskById(taskId) {
     if (!taskId) return;
     const t = tasks.find(x => x.id === taskId);
     if (!t) return;
 
     stopTaskAudio(taskId);
+    if (window.AndroidVoice && window.AndroidVoice.stopAlarmService) {
+      window.AndroidVoice.stopAlarmService();
+    }
     if (window.AndroidVoice && window.AndroidVoice.cancelAlarm) {
       window.AndroidVoice.cancelAlarm(taskId);
     }
@@ -4321,7 +4378,6 @@ function initVoiceClockApp() {
     const snoozeTime = Date.now() + (snoozeMins * 60 * 1000);
     t.ringing = false;
     t.snoozedUntil = snoozeTime;
-    // CRITICAL: Do NOT overwrite t.time!
     t.enabled = true;
     saveTasks();
 
@@ -4329,15 +4385,16 @@ function initVoiceClockApp() {
       window.AndroidVoice.scheduleAlarm(t.id, snoozeTime, t.title, 'task', t.title, t.voice || 'female_1');
     }
 
-    currentActiveTaskId = null;
-    taskModal?.classList.remove('show');
+    if (currentActiveTaskId === taskId) {
+      currentActiveTaskId = null;
+      taskModal?.classList.remove('show');
+    }
     renderTasks();
     const isHi = userSettings.appLanguage === 'hi';
     showPopup(isHi ? `कार्य ${snoozeMins} मिनट के लिए स्नूज़ किया गया` : `Task snoozed for ${snoozeMins} minutes`, 'snooze');
   }
 
-  function handleTaskDismiss() {
-    const taskId = currentActiveTaskId;
+  function dismissTaskById(taskId) {
     if (!taskId) return;
     const t = tasks.find(x => x.id === taskId);
     if (!t) return;
@@ -4406,16 +4463,29 @@ function initVoiceClockApp() {
       }
     } else {
       t.enabled = false;
+      if (window.AndroidVoice && window.AndroidVoice.cancelAlarm) {
+        window.AndroidVoice.cancelAlarm(t.id);
+      }
     }
 
     saveTasks();
-    currentActiveTaskId = null;
-    taskModal?.classList.remove('show');
+    if (currentActiveTaskId === taskId) {
+      currentActiveTaskId = null;
+      taskModal?.classList.remove('show');
+    }
     taskFormView?.classList.add('hidden');
     taskListView?.classList.remove('hidden');
     renderTasks();
     const isHi = userSettings.appLanguage === 'hi';
     showPopup(isHi ? 'कार्य बंद किया गया' : 'Task dismissed', 'dismissed');
+  }
+
+  function handleTaskSnooze() {
+    snoozeTaskById(currentActiveTaskId);
+  }
+
+  function handleTaskDismiss() {
+    dismissTaskById(currentActiveTaskId);
   }
 
   // Setup interactive slider gesture for Task Modal
@@ -5102,76 +5172,35 @@ function initVoiceClockApp() {
   };
 
   function handleNativeAlarmEvent(alarmId, action) {
-    stopAlarmAudio(alarmId);
-    if (currentActiveAlarmId === alarmId || !alarmId) {
-      currentActiveAlarmId = null;
-      alarmModal?.classList.remove('show');
+    let targetId = alarmId;
+    if (!targetId) {
+      if (currentActiveAlarmId) targetId = currentActiveAlarmId;
+      else if (currentActiveTaskId) targetId = currentActiveTaskId;
     }
-    const al = alarms.find(a => a.id === alarmId);
-    if (!al) return;
 
-    const isHi = userSettings.appLanguage === 'hi';
-    if (action === 'snooze') {
-      al.ringing = false;
-      const snoozeMins = parseInt(userSettings.snoozeDuration || '10', 10) || 10;
-      const snoozeTime = Date.now() + (snoozeMins * 60 * 1000);
-      al.snoozedUntil = snoozeTime;
-      // Keep scheduled time intact on snooze
-      al.enabled = true;
-      saveAlarms();
-      renderAlarms();
-      showPopup(isHi ? `अलार्म ${snoozeMins} मिनट के लिए स्नूज़ किया गया` : `Alarm snoozed for ${snoozeMins} minutes`, 'snooze');
-    } else if (action === 'dismiss') {
-      al.ringing = false;
-      if (al.repeatDays && al.repeatDays.length > 0) {
-        advanceAlarmToNextRepeatDay(al);
-        if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
-          window.AndroidVoice.scheduleAlarm(
-            al.id,
-            al.time.getTime(),
-            al.label,
-            al.mode,
-            al.ttsText,
-            al.voice || 'female_1'
-          );
-        }
-      } else if (al.repeat === 'once') {
-        al.enabled = false;
-        al.snoozedUntil = null;
+    const al = alarms.find(a => a.id === targetId);
+    if (al) {
+      if (action === 'snooze') {
+        snoozeAlarmById(targetId);
       } else {
-        let interval = 60000;
-        if (al.repeat === 'custom' && al.intervalMs) {
-          interval = al.intervalMs;
-        } else {
-          const mapping = {
-            '1 min': 60000,
-            '10 min': 600000,
-            '1 hr': 3600000,
-            '5 hr': 18000000
-          };
-          interval = mapping[al.repeat] || 60000;
-        }
-        let nextTime = new Date(al.time.getTime() + interval);
-        while (nextTime.getTime() <= Date.now()) {
-          nextTime = new Date(nextTime.getTime() + interval);
-        }
-        al.time = nextTime;
-        al.snoozedUntil = null;
-        if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
-          window.AndroidVoice.scheduleAlarm(
-            al.id,
-            al.time.getTime(),
-            al.label,
-            al.mode,
-            al.ttsText,
-            al.voice || 'female_1'
-          );
-        }
+        dismissAlarmById(targetId);
       }
-      saveAlarms();
-      renderAlarms();
-      showPopup(isHi ? 'अलार्म बंद किया गया' : 'Alarm dismissed', 'dismissed');
+      return;
     }
+
+    const t = tasks.find(x => x.id === targetId);
+    if (t) {
+      if (action === 'snooze') {
+        snoozeTaskById(targetId);
+      } else {
+        dismissTaskById(targetId);
+      }
+      return;
+    }
+
+    // Fallback: stop all alarm & task audio and native services
+    stopAlarmAudio();
+    stopTaskAudio();
   }
 
   window.handleNativeAlarmEvent = handleNativeAlarmEvent;
@@ -5207,25 +5236,44 @@ function initVoiceClockApp() {
         if (nativeStr) {
           const nativeList = JSON.parse(nativeStr);
           if (Array.isArray(nativeList)) {
-            let changed = false;
+            let changedAlarms = false;
+            let changedTasks = false;
             nativeList.forEach(nat => {
-              const local = alarms.find(a => a.id === nat.id);
-              if (local) {
+              const localAlarm = alarms.find(a => a.id === nat.id);
+              if (localAlarm) {
                 const natTime = Number(nat.triggerTime);
-                if (!isNaN(natTime) && natTime > local.time.getTime()) {
-                  local.snoozedUntil = natTime;
-                  local.ringing = false;
-                  changed = true;
+                if (!isNaN(natTime) && natTime > localAlarm.time.getTime()) {
+                  localAlarm.snoozedUntil = natTime;
+                  localAlarm.ringing = false;
+                  changedAlarms = true;
                 }
-                if (nat.voice && local.voice !== nat.voice) {
-                  local.voice = nat.voice;
-                  changed = true;
+                if (nat.voice && localAlarm.voice !== nat.voice) {
+                  localAlarm.voice = nat.voice;
+                  changedAlarms = true;
+                }
+              }
+              const localTask = tasks.find(t => t.id === nat.id);
+              if (localTask) {
+                const natTime = Number(nat.triggerTime);
+                const taskTimeMs = localTask.time instanceof Date ? localTask.time.getTime() : new Date(localTask.time).getTime();
+                if (!isNaN(natTime) && natTime > taskTimeMs) {
+                  localTask.snoozedUntil = natTime;
+                  localTask.ringing = false;
+                  changedTasks = true;
+                }
+                if (nat.voice && localTask.voice !== nat.voice) {
+                  localTask.voice = nat.voice;
+                  changedTasks = true;
                 }
               }
             });
-            if (changed) {
+            if (changedAlarms) {
               saveAlarms();
               renderAlarms();
+            }
+            if (changedTasks) {
+              saveTasks();
+              renderTasks();
             }
           }
         }

@@ -52,6 +52,7 @@
             android:showOnLockScreen="true"
             android:inheritShowWhenLocked="true"
             android:launchMode="singleTask"
+            android:taskAffinity=""
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar"/>
 

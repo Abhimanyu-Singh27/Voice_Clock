@@ -244,27 +244,46 @@ public class MainActivity extends BridgeActivity {
                 AlarmManager alarmManager =
                         (AlarmManager) getSystemService(Context.ALARM_SERVICE);
 
-                Intent intent =
-                        new Intent(MainActivity.this, AlarmReceiver.class);
+                if (alarmManager != null && alarmId != null) {
+                    Intent intent =
+                            new Intent(MainActivity.this, AlarmReceiver.class);
 
-                PendingIntent pi =
-                        PendingIntent.getBroadcast(
-                                MainActivity.this,
-                                alarmId.hashCode(),
-                                intent,
-                                PendingIntent.FLAG_UPDATE_CURRENT
-                                        | PendingIntent.FLAG_IMMUTABLE
-                        );
+                    PendingIntent pi =
+                            PendingIntent.getBroadcast(
+                                    MainActivity.this,
+                                    alarmId.hashCode(),
+                                    intent,
+                                    PendingIntent.FLAG_UPDATE_CURRENT
+                                            | PendingIntent.FLAG_IMMUTABLE
+                            );
 
-                alarmManager.cancel(pi);
+                    alarmManager.cancel(pi);
+                }
+
+                try {
+                    Intent stop = new Intent(MainActivity.this, AlarmService.class);
+                    stop.setAction("STOP_ALARM");
+                    if (alarmId != null) stop.putExtra("alarmId", alarmId);
+                    startService(stop);
+                    stopService(stop);
+                } catch (Exception ignored) {}
+
+                stopAlarmVibration();
+                stopNativeTTS();
             }
 
             @JavascriptInterface
             public void stopAlarmService() {
-                Intent stop =
-                        new Intent(MainActivity.this, AlarmService.class);
-                stop.setAction("STOP_ALARM");
-                startService(stop);
+                try {
+                    Intent stop =
+                            new Intent(MainActivity.this, AlarmService.class);
+                    stop.setAction("STOP_ALARM");
+                    startService(stop);
+                    stopService(stop);
+                } catch (Exception ignored) {}
+
+                stopAlarmVibration();
+                stopNativeTTS();
             }
 
             @JavascriptInterface

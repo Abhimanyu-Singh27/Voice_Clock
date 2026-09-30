@@ -124,9 +124,6 @@ public class AlarmActivity extends Activity {
         }, 4000);
 
         clockView = findViewById(R.id.alarmClock);
-        TextView titleView = findViewById(R.id.alarmTitle);
-        TextView messageView = findViewById(R.id.alarmMessage);
-
         View btnSnooze = findViewById(R.id.btnSnooze);
         View btnCenter = findViewById(R.id.btnCenterAlarm);
         View btnDismiss = findViewById(R.id.btnDismiss);
@@ -138,22 +135,7 @@ public class AlarmActivity extends Activity {
             swipeHint.setText(isHi ? "◂ स्नूज़ के लिए स्लाइड करें      बंद करने के लिए स्लाइड करें ▸" : "◂ Slide left to Snooze      Slide right to Dismiss ▸");
         }
 
-        // Title format
-        if (label != null && !label.trim().isEmpty() && !label.equalsIgnoreCase("Alarm") && !label.equalsIgnoreCase("अलार्म") && !label.equalsIgnoreCase("Task") && !label.equalsIgnoreCase("कार्य")) {
-            titleView.setText(label);
-        } else if ("task".equalsIgnoreCase(type)) {
-            titleView.setText(isHi ? "कार्य" : "Task");
-        } else {
-            titleView.setText(isHi ? "अलार्म" : "Alarm");
-        }
-
-        // Subtitle message if present and different from label
-        if (text != null && !text.trim().isEmpty() && !text.equalsIgnoreCase(label)) {
-            messageView.setText(text);
-            messageView.setVisibility(View.VISIBLE);
-        } else {
-            messageView.setVisibility(View.GONE);
-        }
+        updateAlarmData(getIntent());
 
         // Update time display HH:mm
         updateTimeDisplay();
@@ -245,6 +227,73 @@ public class AlarmActivity extends Activity {
         });
     }
 
+    @Override
+    public void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            setShowWhenLocked(true);
+            setTurnScreenOn(true);
+        }
+        getWindow().addFlags(
+                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
+                        | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+                        | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+                        | WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
+        );
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            setShowWhenLocked(true);
+            setTurnScreenOn(true);
+        }
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            setShowWhenLocked(true);
+            setTurnScreenOn(true);
+        }
+        updateAlarmData(intent);
+    }
+
+    private void updateAlarmData(Intent intent) {
+        if (intent == null) return;
+        alarmId = intent.getStringExtra("alarmId");
+        label = intent.getStringExtra("label");
+        type = intent.getStringExtra("type");
+        text = intent.getStringExtra("text");
+        voice = intent.getStringExtra("voice");
+
+        TextView titleView = findViewById(R.id.alarmTitle);
+        TextView messageView = findViewById(R.id.alarmMessage);
+        boolean isHi = "hi".equalsIgnoreCase(AlarmPreferences.getAppLanguage(this));
+
+        if (titleView != null) {
+            if (label != null && !label.trim().isEmpty() && !label.equalsIgnoreCase("Alarm") && !label.equalsIgnoreCase("अलार्म") && !label.equalsIgnoreCase("Task") && !label.equalsIgnoreCase("कार्य")) {
+                titleView.setText(label);
+            } else if ("task".equalsIgnoreCase(type)) {
+                titleView.setText(isHi ? "कार्य" : "Task");
+            } else {
+                titleView.setText(isHi ? "अलार्म" : "Alarm");
+            }
+        }
+
+        if (messageView != null) {
+            if (text != null && !text.trim().isEmpty() && !text.equalsIgnoreCase(label)) {
+                messageView.setText(text);
+                messageView.setVisibility(View.VISIBLE);
+            } else {
+                messageView.setVisibility(View.GONE);
+            }
+        }
+    }
+
     private void updateTimeDisplay() {
         if (clockView != null) {
             SimpleDateFormat sdf = new SimpleDateFormat("hh:mm", Locale.getDefault());
@@ -259,12 +308,16 @@ public class AlarmActivity extends Activity {
 
         if (alarmId != null) {
             AlarmPreferences.recordPendingAction(this, alarmId, "dismiss");
+            AlarmPreferences.removeAlarm(this, alarmId);
         }
 
-        // Stop ringing service
-        Intent stopIntent = new Intent(this, AlarmService.class);
-        stopIntent.setAction("STOP_ALARM");
-        startService(stopIntent);
+        // Instantly stop ringing service and cut off audio
+        try {
+            Intent stopIntent = new Intent(this, AlarmService.class);
+            stopIntent.setAction("STOP_ALARM");
+            startService(stopIntent);
+            stopService(stopIntent);
+        } catch (Exception ignored) {}
 
         // Inform MainActivity
         Intent i = new Intent(this, MainActivity.class);
@@ -275,7 +328,11 @@ public class AlarmActivity extends Activity {
             startActivity(i);
         } catch (Exception ignored) {}
 
-        finish();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            finishAndRemoveTask();
+        } else {
+            finish();
+        }
     }
 
     private void performSnooze() {
@@ -347,10 +404,13 @@ public class AlarmActivity extends Activity {
             }
         }
 
-        // Stop current alarm service
-        Intent stopIntent = new Intent(this, AlarmService.class);
-        stopIntent.setAction("STOP_ALARM");
-        startService(stopIntent);
+        // Instantly stop current ringing service audio
+        try {
+            Intent stopIntent = new Intent(this, AlarmService.class);
+            stopIntent.setAction("STOP_ALARM");
+            startService(stopIntent);
+            stopService(stopIntent);
+        } catch (Exception ignored) {}
 
         // Tell MainActivity
         Intent open = new Intent(this, MainActivity.class);
@@ -361,7 +421,11 @@ public class AlarmActivity extends Activity {
             startActivity(open);
         } catch (Exception ignored) {}
 
-        finish();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            finishAndRemoveTask();
+        } else {
+            finish();
+        }
     }
 
     @Override

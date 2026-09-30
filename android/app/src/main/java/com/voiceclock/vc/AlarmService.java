@@ -28,6 +28,9 @@ public class AlarmService extends Service {
     private PowerManager.WakeLock cpuWakeLock;
     private PowerManager.WakeLock screenWakeLock;
     private String currentAlarmId;
+    private volatile boolean isRinging = false;
+    private final android.os.Handler ttsHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private Runnable ttsRepeatRunnable = null;
 
     @Override
     public void onCreate() {
@@ -128,14 +131,6 @@ public class AlarmService extends Service {
         String action = intent.getAction();
 
         if ("STOP_ALARM".equals(action)) {
-            String alarmId = intent.getStringExtra("alarmId");
-            if (alarmId == null && currentAlarmId != null) {
-                alarmId = currentAlarmId;
-            }
-            if (alarmId != null) {
-                AlarmPreferences.removeAlarm(this, alarmId);
-                AlarmPreferences.recordPendingAction(this, alarmId, "dismiss");
-            }
             stopAlarm();
             return START_NOT_STICKY;
         }
@@ -144,6 +139,7 @@ public class AlarmService extends Service {
             return START_NOT_STICKY;
         }
 
+        isRinging = true;
         currentAlarmId = intent.getStringExtra("alarmId");
 
         // Immediately wake CPU and display
@@ -209,8 +205,10 @@ public class AlarmService extends Service {
 
                         @Override
                         public void onDone(String utteranceId) {
-                            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
-                                if (textToSpeech != null) {
+                            if (!isRinging) return;
+                            ttsRepeatRunnable = () -> {
+                                if (!isRinging || textToSpeech == null) return;
+                                try {
                                     configureTtsVoice(textToSpeech, selectedVoice, speakText);
                                     textToSpeech.speak(
                                             speakText,
@@ -218,8 +216,9 @@ public class AlarmService extends Service {
                                             null,
                                             "VOICE_CLOCK"
                                     );
-                                }
-                            }, 2000);
+                                } catch (Exception ignored) {}
+                            };
+                            ttsHandler.postDelayed(ttsRepeatRunnable, 2000);
                         }
 
                         @Override
@@ -271,7 +270,15 @@ public class AlarmService extends Service {
         return START_STICKY;
     }
 
-    private void stopAlarm() {
+    private synchronized void stopAlarm() {
+        isRinging = false;
+
+        if (ttsRepeatRunnable != null) {
+            ttsHandler.removeCallbacks(ttsRepeatRunnable);
+            ttsRepeatRunnable = null;
+        }
+        ttsHandler.removeCallbacksAndMessages(null);
+
         if (mediaPlayer != null) {
             try {
                 mediaPlayer.stop();
@@ -288,7 +295,17 @@ public class AlarmService extends Service {
             textToSpeech = null;
         }
 
-        stopForeground(true);
+        try {
+            android.app.NotificationManager nm = (android.app.NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm != null) {
+                nm.cancel(AlarmNotificationHelper.NOTIFICATION_ID);
+            }
+        } catch (Exception ignored) {}
+
+        try {
+            stopForeground(true);
+        } catch (Exception ignored) {}
+
         releaseWakeLocks();
         stopSelf();
     }

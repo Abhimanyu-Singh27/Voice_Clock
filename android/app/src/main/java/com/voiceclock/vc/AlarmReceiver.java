@@ -26,8 +26,8 @@ public class AlarmReceiver extends BroadcastReceiver {
                     try { sWakeLock.release(); } catch (Exception ignored) {}
                 }
                 sWakeLock = pm.newWakeLock(
-                        PowerManager.PARTIAL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP,
-                        "VoiceClock:AlarmReceiverStaticWake"
+                        PowerManager.PARTIAL_WAKE_LOCK,
+                        "VoiceClock:AlarmReceiverCpuWake"
                 );
                 sWakeLock.acquire(60000);
             } catch (Exception ignored) {}
@@ -35,11 +35,20 @@ public class AlarmReceiver extends BroadcastReceiver {
             try {
                 @SuppressWarnings("deprecation")
                 PowerManager.WakeLock screenLock = pm.newWakeLock(
-                        PowerManager.SCREEN_BRIGHT_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP | PowerManager.ON_AFTER_RELEASE,
+                        PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP | PowerManager.ON_AFTER_RELEASE,
                         "VoiceClock:AlarmReceiverScreenBright"
                 );
-                screenLock.acquire(20000);
-            } catch (Exception ignored) {}
+                screenLock.acquire(30000);
+            } catch (Exception e1) {
+                try {
+                    @SuppressWarnings("deprecation")
+                    PowerManager.WakeLock screenLock2 = pm.newWakeLock(
+                            PowerManager.SCREEN_BRIGHT_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP | PowerManager.ON_AFTER_RELEASE,
+                            "VoiceClock:AlarmReceiverScreenBright2"
+                    );
+                    screenLock2.acquire(30000);
+                } catch (Exception ignored) {}
+            }
         }
 
         // If this is a Snooze trigger action from notification
