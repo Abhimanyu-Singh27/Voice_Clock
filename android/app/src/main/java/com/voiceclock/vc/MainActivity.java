@@ -557,6 +557,20 @@ public class MainActivity extends BridgeActivity {
                 });
             }
 
+            @JavascriptInterface
+            public void openUrl(String url) {
+                if (url == null || url.trim().isEmpty()) return;
+                runOnUiThread(() -> {
+                    try {
+                        Intent intent = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url.trim()));
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        startActivity(intent);
+                    } catch (Exception e) {
+                        android.util.Log.e("VOICE_CLOCK", "Failed to open url: " + url, e);
+                    }
+                });
+            }
+
         }, "AndroidVoice");
     }
 

@@ -254,6 +254,8 @@ function initVoiceClockApp() {
       settingTimerVibrateLabel: 'Timer vibrate',
       settingThemeLabel: 'Light Theme',
       settingThemeSub: 'Switch between Dark and Light mode',
+      settingCheckUpdateLabel: 'Check for Updates',
+      settingCheckUpdateSub: 'Scan GitHub Releases for latest APK version',
       settingAboutVCLabel: 'About Voice Clock',
 
       alarmEditTitle: 'Edit Alarm',
@@ -445,6 +447,8 @@ function initVoiceClockApp() {
       settingTimerVibrateLabel: 'टाइमर कंपन',
       settingThemeLabel: 'लाइट थीम',
       settingThemeSub: 'डार्क और लाइट मोड में बदलें',
+      settingCheckUpdateLabel: 'अपडेट चेक करें',
+      settingCheckUpdateSub: 'नवीनतम APK संस्करण के लिए गिटहब रिलीज़ स्कैन करें',
       settingAboutVCLabel: 'वॉयस क्लॉक के बारे में',
 
       alarmEditTitle: 'अलार्म संपादित करें',
@@ -678,6 +682,8 @@ function initVoiceClockApp() {
       'settingTimerVibrateLabel',
       'settingThemeLabel',
       'settingThemeSub',
+      'settingCheckUpdateLabel',
+      'settingCheckUpdateSub',
       'settingAboutVCLabel',
       'alarmEditTitle',
       'taskEditTitle',
@@ -1838,6 +1844,16 @@ function initVoiceClockApp() {
       }
     }
 
+    const checkBadge = $('settingsCheckUpdateBadge');
+    if (checkBadge) {
+      if (count > 0) {
+        checkBadge.textContent = userSettings.appLanguage === 'hi' ? `अपडेट ${count}` : `Update ${count}`;
+        checkBadge.classList.remove('hidden');
+      } else {
+        checkBadge.classList.add('hidden');
+      }
+    }
+
     const versionNewPill = $('aboutVersionNewPill');
     if (versionNewPill) {
       if (count > 0) versionNewPill.classList.remove('hidden');
@@ -1845,13 +1861,76 @@ function initVoiceClockApp() {
     }
   }
 
+  const GITHUB_RELEASES_API = 'https://api.github.com/repos/Abhimanyu-Singh27/Voice_Clock/releases/latest';
   const GITHUB_OTA_URLS = [
+    'https://raw.githubusercontent.com/Abhimanyu-Singh27/Voice_Clock/main/update-manifest.json',
     'https://abhimanyu-singh27.github.io/Voice_Clock/update-manifest.json',
     'https://abhimanyu-singh27.github.io/Voice_Clock/www/update-manifest.json',
     'update-manifest.json'
   ];
 
   async function checkRemoteUpdateManifest() {
+    // 1. Primary: Check GitHub Releases API for published APK releases
+    try {
+      const res = await fetch(GITHUB_RELEASES_API, {
+        headers: { 'Accept': 'application/vnd.github.v3+json' }
+      });
+      if (res.ok) {
+        const release = await res.json();
+        const tag = (release.tag_name || release.name || '').replace(/^[vV]/, '').trim();
+        if (tag && compareVersions(tag, installedVersion) > 0) {
+          const apkAsset = Array.isArray(release.assets) ? release.assets.find(a => a.name && a.name.toLowerCase().endsWith('.apk')) : null;
+          const downloadUrl = apkAsset ? apkAsset.browser_download_url : (release.html_url || 'https://github.com/Abhimanyu-Singh27/Voice_Clock/releases');
+          const apkSizeMB = apkAsset && apkAsset.size ? (apkAsset.size / (1024 * 1024)).toFixed(1) + ' MB' : '~10 MB';
+          let relDate = 'Today';
+          if (release.published_at) {
+            try {
+              relDate = new Date(release.published_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+            } catch (dErr) {}
+          }
+
+          let bullets = [];
+          if (release.body) {
+            bullets = release.body
+              .split('\n')
+              .map(l => l.trim())
+              .filter(l => l.length > 0)
+              .map(l => l.replace(/^[-*#\d.]+\s*/, '').trim())
+              .filter(l => l.length > 0);
+          }
+          if (bullets.length === 0) {
+            bullets = [release.name || ('Release v' + tag)];
+          }
+
+          pendingUpdateRelease = {
+            version: tag,
+            date: relDate,
+            date_hi: relDate,
+            type: 'GitHub Official APK Release',
+            type_hi: 'गिटहब आधिकारिक APK रिलीज़',
+            size: apkSizeMB,
+            size_hi: apkSizeMB,
+            changelog: bullets,
+            changelog_hi: bullets,
+            downloadUrl: downloadUrl,
+            isApk: true,
+            releaseUrl: release.html_url
+          };
+          localStorage.setItem('vc_pending_update', JSON.stringify(pendingUpdateRelease));
+          refreshSettingsUpdateBadge();
+          return pendingUpdateRelease;
+        } else if (tag) {
+          localStorage.removeItem('vc_pending_update');
+          pendingUpdateRelease = null;
+          refreshSettingsUpdateBadge();
+          return null;
+        }
+      }
+    } catch (apiErr) {
+      console.log('GitHub Releases API notice:', apiErr);
+    }
+
+    // 2. Secondary fallback: check OTA manifest URLs
     for (const url of GITHUB_OTA_URLS) {
       try {
         const fetchUrl = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
@@ -1867,10 +1946,12 @@ function initVoiceClockApp() {
                 date_hi: manifest.releaseDate_hi || manifest.releaseDate || 'आज',
                 type: manifest.type === 'feature' ? 'Feature & Stability Release' : (manifest.type === 'foundation' ? 'Official Foundation Release' : 'Bug Fix & Performance Update'),
                 type_hi: manifest.type_hi || (manifest.type === 'feature' ? 'फीचर और स्टेबिलिटी रिलीज़' : 'बग सुधार और अपडेट'),
-                size: manifest.downloadSize || '~1.5 MB',
-                size_hi: manifest.downloadSize_hi || manifest.downloadSize || '~1.5 MB',
+                size: manifest.downloadSize || '~10 MB',
+                size_hi: manifest.downloadSize_hi || manifest.downloadSize || '~10 MB',
                 changelog: manifest.releaseNotes || ['New features and improvements'],
                 changelog_hi: manifest.releaseNotes_hi || manifest.releaseNotes || ['नई सुविधाएं और सुधार'],
+                downloadUrl: manifest.downloadUrl || null,
+                isApk: !!manifest.downloadUrl,
                 scriptUrl: manifest.scriptUrl || (base ? base + 'script.js' : 'script.js'),
                 cssUrl: manifest.cssUrl || (base ? base + 'style.css' : 'style.css')
               };
@@ -1969,7 +2050,7 @@ function initVoiceClockApp() {
     swRadarScanner?.classList.remove('scanning');
 
     if (swScanHeading) swScanHeading.textContent = isHi ? 'अपडेट चेक करें' : 'Check for Updates';
-    if (swScanSubtext) swScanSubtext.textContent = isHi ? 'नई सुविधाओं, प्रदर्शन सुधारों और बग फिक्स के लिए वॉयस क्लॉक चैनलों को स्कैन करें।' : 'Scan Voice Clock OTA channels to discover new features, performance updates, and bug fixes.';
+    if (swScanSubtext) swScanSubtext.textContent = isHi ? 'नई सुविधाओं, प्रदर्शन सुधारों और बग फिक्स के लिए गिटहब रिलीज़ को स्कैन करें।' : 'Scan GitHub Releases to discover new features, performance updates, and bug fixes.';
     if (startScanBtnText) startScanBtnText.textContent = isHi ? 'अपडेट चेक करें' : 'Check for Updates';
 
     if (softwareUpdateView) softwareUpdateView.classList.remove('hidden');
@@ -1980,6 +2061,7 @@ function initVoiceClockApp() {
     refreshSettingsUpdateBadge();
   }
 
+  $('settingCheckUpdateBtn')?.addEventListener('click', openSoftwareUpdateScreen);
   aboutVersionRowBtn?.addEventListener('click', openSoftwareUpdateScreen);
   aboutVersionBtn?.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -2004,19 +2086,19 @@ function initVoiceClockApp() {
     upToDateCard?.classList.add('hidden');
     swProgressCard?.classList.add('hidden');
 
-    if (startScanBtnText) startScanBtnText.textContent = isHi ? 'चैनल स्कैन हो रहे हैं...' : 'Scanning OTA Channels...';
+    if (startScanBtnText) startScanBtnText.textContent = isHi ? 'रिलीज़ स्कैन हो रही हैं...' : 'Scanning Releases...';
     if (swScanHeading) swScanHeading.textContent = isHi ? 'अपडेट चेक किया जा रहा है...' : 'Checking for Updates...';
-    if (swScanSubtext) swScanSubtext.textContent = isHi ? 'वॉयस क्लॉक सर्वर से जुड़कर पैकेज सत्यापित किया जा रहा है...' : 'Connecting to Voice Clock OTA servers and verifying package hashes...';
+    if (swScanSubtext) swScanSubtext.textContent = isHi ? 'गिटहब रिलीज़ सर्वर से जुड़कर नवीनतम पैकेज सत्यापित किया जा रहा है...' : 'Connecting to GitHub Releases and verifying package information...';
 
-    // Refresh from manifest
+    // Refresh from GitHub Releases & manifest
     await checkRemoteUpdateManifest();
 
     setTimeout(() => {
       swRadarScanner.classList.remove('scanning');
 
-      // Check if there is an update pending or in releases
-      const latestRelease = pendingUpdateRelease || APP_RELEASES[0];
-      const hasNewVersion = compareVersions(latestRelease.version, installedVersion) > 0;
+      // Check if there is an update pending
+      const latestRelease = pendingUpdateRelease;
+      const hasNewVersion = latestRelease && compareVersions(latestRelease.version, installedVersion) > 0;
 
       if (hasNewVersion) {
         // Show New Version Card
@@ -2024,9 +2106,9 @@ function initVoiceClockApp() {
         if (swScanSubtext) swScanSubtext.textContent = isHi ? `संस्करण v${latestRelease.version} इंस्टॉल करने के लिए तैयार है।` : `Version ${latestRelease.version} is ready for installation.`;
 
         if (newVersionBadgeTag) newVersionBadgeTag.textContent = `v${latestRelease.version}`;
-        if (newVerType) newVerType.textContent = isHi ? (latestRelease.type_hi || latestRelease.type || 'फीचर और स्टेबिलिटी रिलीज़') : (latestRelease.type || 'Feature & Stability Release');
+        if (newVerType) newVerType.textContent = isHi ? (latestRelease.type_hi || latestRelease.type || 'गिटहब आधिकारिक रिलीज़') : (latestRelease.type || 'GitHub Official Release');
         if (newVerDate) newVerDate.textContent = isHi ? (latestRelease.date_hi || latestRelease.date || 'आज') : (latestRelease.date || 'Today');
-        if (newVerSize) newVerSize.textContent = isHi ? (latestRelease.size_hi || latestRelease.size || '~1.5 MB') : (latestRelease.size || '~1.5 MB');
+        if (newVerSize) newVerSize.textContent = isHi ? (latestRelease.size_hi || latestRelease.size || '~10 MB') : (latestRelease.size || '~10 MB');
 
         if (newVerChangelogList) {
           newVerChangelogList.innerHTML = '';
@@ -2038,22 +2120,42 @@ function initVoiceClockApp() {
           });
         }
 
+        const applyBtnTextEl = $('applyUpdateBtnText');
+        if (applyBtnTextEl) {
+          if (latestRelease.downloadUrl) {
+            applyBtnTextEl.textContent = isHi ? 'APK डाउनलोड करें' : 'Download Update APK';
+          } else {
+            applyBtnTextEl.textContent = isHi ? 'नए संस्करण में अपडेट करें' : 'Update to New Version';
+          }
+        }
+
         newVersionCard?.classList.remove('hidden');
         swMainActionWrap?.classList.add('hidden');
       } else {
         // Already up to date
         if (swScanHeading) swScanHeading.textContent = isHi ? '✓ वॉयस क्लॉक अपडेट है' : '✓ Voice Clock is Up to Date';
-        if (swScanSubtext) swScanSubtext.textContent = isHi ? `आधिकारिक संस्करण v${installedVersion} चल रहा है। कोई अपडेट आवश्यक नहीं है।` : `Running official version v${installedVersion}. No updates needed.`;
+        if (swScanSubtext) swScanSubtext.textContent = isHi ? `आधिकारिक संस्करण v${installedVersion} चल रहा है। कोई नया अपडेट नहीं मिला।` : `Running official version v${installedVersion}. You have the latest version.`;
         upToDateCard?.classList.remove('hidden');
         if (startScanBtnText) startScanBtnText.textContent = isHi ? 'दोबारा चेक करें' : 'Check Again';
       }
-    }, 1600);
+    }, 1200);
   }
 
-  // User decides to Update to New Version in Real Time
+  // User decides to Update to New Version
   applyRealtimeUpdateBtn?.addEventListener('click', async () => {
     const isHi = userSettings.appLanguage === 'hi';
     const targetRelease = pendingUpdateRelease || APP_RELEASES[0];
+
+    // If an APK or browser download URL is available
+    if (targetRelease && targetRelease.downloadUrl) {
+      if (window.AndroidVoice && typeof window.AndroidVoice.openUrl === 'function') {
+        window.AndroidVoice.openUrl(targetRelease.downloadUrl);
+      } else {
+        window.open(targetRelease.downloadUrl, '_system');
+      }
+      showPopup(isHi ? 'डाउनलोड शुरू हो रहा है! APK डाउनलोड होने पर उस पर टैप करके इंस्टॉल करें।' : 'Opening download in browser! Tap the downloaded APK to install the update.');
+      return;
+    }
 
     newVersionCard?.classList.add('hidden');
     swProgressCard?.classList.remove('hidden');
