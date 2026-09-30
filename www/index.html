@@ -1043,6 +1043,8 @@
           <!-- Populated dynamically by script.js -->
         </div>
       </div>
+    </div>
+
     <!-- ================= NOTIFICATIONS VIEW ================= -->
     <div id="notificationsView" class="settings-page hidden">
       <header class="settings-header">
@@ -1684,13 +1686,13 @@
       }
     });
 
-    // 3. Clear any stale OTA data from previous tests so v1.0.0 foundation runs 100% clean
+    // 3. Clear any stale OTA data from previous tests so v1.1.0 runs 100% clean
     try {
       var otaVer = localStorage.getItem('vc_installed_version');
       if (!otaVer || otaVer === '1.0.0' || String(otaVer).startsWith('2.')) {
         localStorage.removeItem('vc_ota_js');
         localStorage.removeItem('vc_ota_css');
-        localStorage.setItem('vc_installed_version', '1.0.0');
+        localStorage.setItem('vc_installed_version', '1.1.0');
       } else {
         var otaCss = localStorage.getItem('vc_ota_css');
         if (otaCss && otaCss.length > 20) {

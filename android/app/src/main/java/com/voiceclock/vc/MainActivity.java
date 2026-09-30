@@ -39,6 +39,7 @@ public class MainActivity extends BridgeActivity {
     private BroadcastReceiver voiceReceiver;
     private BroadcastReceiver screenOffReceiver;
     private BroadcastReceiver reminderReceiver;
+    private BroadcastReceiver alarmTriggerReceiver;
     private Vibrator vibrator;
     private boolean isAlarmRinging = false;
     private SpeechRecognizer activeSpeechRecognizer;
@@ -48,6 +49,16 @@ public class MainActivity extends BridgeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            setShowWhenLocked(true);
+            setTurnScreenOn(true);
+        }
+        getWindow().addFlags(
+                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
+                        | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+                        | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+        );
 
         webView = bridge.getWebView();
 
@@ -144,11 +155,54 @@ public class MainActivity extends BridgeActivity {
         };
         registerReceiver(screenOffReceiver, new IntentFilter(Intent.ACTION_SCREEN_OFF));
 
+        alarmTriggerReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (intent != null && "com.voiceclock.vc.ALARM_TRIGGER".equals(intent.getAction())) {
+                    wakeScreenAndShowAlarm(intent);
+                }
+            }
+        };
+        IntentFilter alarmFilter = new IntentFilter("com.voiceclock.vc.ALARM_TRIGGER");
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(alarmTriggerReceiver, alarmFilter, Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(alarmTriggerReceiver, alarmFilter);
+        }
+
         handleAlarmAction(getIntent());
 
         if (getIntent() != null && "com.voiceclock.vc.WAKE_VOICE".equals(getIntent().getAction())) {
             wakeScreenAndShowAssistant(getIntent().getStringExtra("command"));
+        } else if (getIntent() != null && "com.voiceclock.vc.ALARM_TRIGGER".equals(getIntent().getAction())) {
+            wakeScreenAndShowAlarm(getIntent());
         }
+    }
+
+    private void wakeScreenAndShowAlarm(Intent intent) {
+        runOnUiThread(() -> {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+                setShowWhenLocked(true);
+                setTurnScreenOn(true);
+            }
+            getWindow().addFlags(
+                    WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
+                            | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+                            | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+            );
+
+            if (webView != null && intent != null) {
+                String id = intent.getStringExtra("alarmId");
+                String type = intent.getStringExtra("type");
+                String label = intent.getStringExtra("label");
+                String safeId = (id != null) ? id.replace("'", "\\'") : "";
+                String safeType = (type != null) ? type.replace("'", "\\'") : "alarm";
+                String safeLabel = (label != null) ? label.replace("'", "\\'") : "";
+                webView.post(() ->
+                        webView.evaluateJavascript("window.handleNativeAlarmTrigger && window.handleNativeAlarmTrigger('" + safeId + "', '" + safeType + "', '" + safeLabel + "')", null)
+                );
+            }
+        });
     }
 
     private void wakeScreenAndShowAssistant(String command) {
@@ -754,6 +808,8 @@ public class MainActivity extends BridgeActivity {
 
         if (intent != null && "com.voiceclock.vc.WAKE_VOICE".equals(intent.getAction())) {
             wakeScreenAndShowAssistant(intent.getStringExtra("command"));
+        } else if (intent != null && "com.voiceclock.vc.ALARM_TRIGGER".equals(intent.getAction())) {
+            wakeScreenAndShowAlarm(intent);
         }
     }
 
@@ -825,7 +881,7 @@ public class MainActivity extends BridgeActivity {
         boolean preferFemale = true;
 
         if ("male_1".equals(voiceId)) {
-            pitch = 0.78f;
+            pitch = 0.65f;
             rate = 0.95f;
             preferFemale = false;
         } else if ("female_2".equals(voiceId)) {
@@ -833,21 +889,21 @@ public class MainActivity extends BridgeActivity {
             rate = 1.05f;
             preferFemale = true;
         } else if ("male_2".equals(voiceId)) {
-            pitch = 0.85f;
-            rate = 1.0f;
+            pitch = 0.76f;
+            rate = 0.92f;
             preferFemale = false;
         } else if ("female_in".equals(voiceId)) {
             targetLocale = isHindi ? new Locale("hi", "IN") : new Locale("en", "IN");
-            pitch = 1.15f;
+            pitch = 1.12f;
             rate = 1.0f;
             preferFemale = true;
         } else if ("male_in".equals(voiceId)) {
             targetLocale = isHindi ? new Locale("hi", "IN") : new Locale("en", "IN");
-            pitch = 0.82f;
-            rate = 0.98f;
+            pitch = 0.72f;
+            rate = 0.95f;
             preferFemale = false;
         } else { // "female_1"
-            pitch = 1.18f;
+            pitch = 1.15f;
             rate = 1.0f;
             preferFemale = true;
         }
@@ -855,9 +911,6 @@ public class MainActivity extends BridgeActivity {
         try {
             tts.setLanguage(targetLocale);
         } catch (Exception ignored) {}
-
-        tts.setPitch(pitch);
-        tts.setSpeechRate(rate);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             try {
@@ -869,8 +922,8 @@ public class MainActivity extends BridgeActivity {
                         String vName = v.getName().toLowerCase(Locale.ROOT);
                         Locale vLoc = v.getLocale();
                         if (vLoc != null && vLoc.getLanguage().equalsIgnoreCase(targetLocale.getLanguage())) {
-                            boolean isFem = vName.contains("female") || vName.contains("#female") || vName.contains("-fem") || vName.contains("f0") || vName.contains("f1");
-                            boolean isMal = vName.contains("male") || vName.contains("#male") || vName.contains("-mal") || vName.contains("m0") || vName.contains("m1");
+                            boolean isFem = vName.contains("female") || vName.contains("#female") || vName.contains("-fem") || vName.contains("f0") || vName.contains("f1") || vName.contains("hia") || vName.contains("hic") || vName.contains("enc") || vName.contains("enf") || vName.contains("iol");
+                            boolean isMal = vName.contains("male") || vName.contains("#male") || vName.contains("-mal") || vName.contains("m0") || vName.contains("m1") || vName.contains("hie") || vName.contains("hid") || vName.contains("iom") || vName.contains("end") || vName.contains("ene") || vName.contains("sfg");
                             if (preferFemale && isFem) {
                                 bestMatch = v;
                                 break;
@@ -888,6 +941,10 @@ public class MainActivity extends BridgeActivity {
                 }
             } catch (Exception ignored) {}
         }
+
+        // Apply pitch & speech rate AFTER setVoice to ensure engine preserves custom pitch
+        tts.setPitch(pitch);
+        tts.setSpeechRate(rate);
 
         tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "MAIN_TTS");
     }
@@ -1057,6 +1114,11 @@ public class MainActivity extends BridgeActivity {
         if (voiceReceiver != null) {
             try {
                 unregisterReceiver(voiceReceiver);
+            } catch (Exception ignored) {}
+        }
+        if (alarmTriggerReceiver != null) {
+            try {
+                unregisterReceiver(alarmTriggerReceiver);
             } catch (Exception ignored) {}
         }
         super.onDestroy();

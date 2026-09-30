@@ -41,7 +41,20 @@ public class AlarmActivity extends Activity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
         createTimestamp = System.currentTimeMillis();
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            setShowWhenLocked(true);
+            setTurnScreenOn(true);
+        }
+
+        getWindow().addFlags(
+                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
+                        | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+                        | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+                        | WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON
+        );
 
         PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
         if (pm != null) {
@@ -54,25 +67,6 @@ public class AlarmActivity extends Activity {
             } catch (Exception ignored) {}
         }
 
-        // Essential lock screen & wake screen settings
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-            setShowWhenLocked(true);
-            setTurnScreenOn(true);
-            KeyguardManager km = (KeyguardManager) getSystemService(KEYGUARD_SERVICE);
-            if (km != null) {
-                km.requestDismissKeyguard(this, null);
-            }
-        }
-
-        getWindow().addFlags(
-                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
-                        | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
-                        | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
-                        | WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
-                        | WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON
-        );
-
-        super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_alarm);
 
         alarmId = getIntent().getStringExtra("alarmId");
@@ -249,6 +243,12 @@ public class AlarmActivity extends Activity {
             setShowWhenLocked(true);
             setTurnScreenOn(true);
         }
+        getWindow().addFlags(
+                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
+                        | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+                        | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+                        | WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON
+        );
     }
 
     @Override

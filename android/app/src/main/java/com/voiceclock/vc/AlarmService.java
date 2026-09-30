@@ -321,7 +321,7 @@ public class AlarmService extends Service {
         boolean preferFemale = true;
 
         if ("male_1".equals(voiceId)) {
-            pitch = 0.78f;
+            pitch = 0.65f;
             rate = 0.95f;
             preferFemale = false;
         } else if ("female_2".equals(voiceId)) {
@@ -329,21 +329,21 @@ public class AlarmService extends Service {
             rate = 1.05f;
             preferFemale = true;
         } else if ("male_2".equals(voiceId)) {
-            pitch = 0.85f;
-            rate = 1.0f;
+            pitch = 0.76f;
+            rate = 0.92f;
             preferFemale = false;
         } else if ("female_in".equals(voiceId)) {
             targetLocale = isHindi ? new Locale("hi", "IN") : new Locale("en", "IN");
-            pitch = 1.15f;
+            pitch = 1.12f;
             rate = 1.0f;
             preferFemale = true;
         } else if ("male_in".equals(voiceId)) {
             targetLocale = isHindi ? new Locale("hi", "IN") : new Locale("en", "IN");
-            pitch = 0.82f;
-            rate = 0.98f;
+            pitch = 0.72f;
+            rate = 0.95f;
             preferFemale = false;
         } else { // "female_1"
-            pitch = 1.18f;
+            pitch = 1.15f;
             rate = 1.0f;
             preferFemale = true;
         }
@@ -351,9 +351,6 @@ public class AlarmService extends Service {
         try {
             tts.setLanguage(targetLocale);
         } catch (Exception ignored) {}
-
-        tts.setPitch(pitch);
-        tts.setSpeechRate(rate);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             try {
@@ -365,8 +362,8 @@ public class AlarmService extends Service {
                         String vName = v.getName().toLowerCase(Locale.ROOT);
                         Locale vLoc = v.getLocale();
                         if (vLoc != null && vLoc.getLanguage().equalsIgnoreCase(targetLocale.getLanguage())) {
-                            boolean isFem = vName.contains("female") || vName.contains("#female") || vName.contains("-fem") || vName.contains("f0") || vName.contains("f1");
-                            boolean isMal = vName.contains("male") || vName.contains("#male") || vName.contains("-mal") || vName.contains("m0") || vName.contains("m1");
+                            boolean isFem = vName.contains("female") || vName.contains("#female") || vName.contains("-fem") || vName.contains("f0") || vName.contains("f1") || vName.contains("hia") || vName.contains("hic") || vName.contains("enc") || vName.contains("enf") || vName.contains("iol");
+                            boolean isMal = vName.contains("male") || vName.contains("#male") || vName.contains("-mal") || vName.contains("m0") || vName.contains("m1") || vName.contains("hie") || vName.contains("hid") || vName.contains("iom") || vName.contains("end") || vName.contains("ene") || vName.contains("sfg");
                             if (preferFemale && isFem) {
                                 bestMatch = v;
                                 break;
@@ -386,6 +383,10 @@ public class AlarmService extends Service {
                 Log.w("VOICE_CLOCK", "Could not set custom system Voice object", e);
             }
         }
+
+        // Apply pitch & speech rate AFTER setVoice to ensure engine preserves custom pitch
+        tts.setPitch(pitch);
+        tts.setSpeechRate(rate);
     }
 
     private boolean isTextHindi(String text) {

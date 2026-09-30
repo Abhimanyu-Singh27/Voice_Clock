@@ -166,5 +166,15 @@ public class AlarmReceiver extends BroadcastReceiver {
         } catch (Exception e) {
             Log.w("VOICE_CLOCK", "Direct startActivity from AlarmReceiver blocked or failed (handled by fullScreenIntent)", e);
         }
+
+        // 4. Notify MainActivity so the in-app modal also wakes up and prepares Snooze/Dismiss UI
+        try {
+            Intent mainAlarmIntent = new Intent("com.voiceclock.vc.ALARM_TRIGGER");
+            mainAlarmIntent.setPackage(context.getPackageName());
+            if (intent.getExtras() != null) {
+                mainAlarmIntent.putExtras(intent.getExtras());
+            }
+            context.sendBroadcast(mainAlarmIntent);
+        } catch (Exception ignored) {}
     }
 }

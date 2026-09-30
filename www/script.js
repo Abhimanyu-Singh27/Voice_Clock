@@ -649,7 +649,7 @@ function initVoiceClockApp() {
       nameEn: 'Aria (Female - Clear & Soft)',
       nameHi: 'आर्या (महिला - सौम्य और स्पष्ट)',
       gender: 'female',
-      pitch: 1.18,
+      pitch: 1.15,
       rate: 1.0
     },
     {
@@ -657,7 +657,7 @@ function initVoiceClockApp() {
       nameEn: 'Guy (Male - Deep & Bold)',
       nameHi: 'अजय (पुरुष - गंभीर और स्पष्ट)',
       gender: 'male',
-      pitch: 0.78,
+      pitch: 0.65,
       rate: 0.95
     },
     {
@@ -673,15 +673,15 @@ function initVoiceClockApp() {
       nameEn: 'David (Male - Calm & Confident)',
       nameHi: 'डेविड (पुरुष - शांत और आत्मविश्वास)',
       gender: 'male',
-      pitch: 0.85,
-      rate: 1.0
+      pitch: 0.76,
+      rate: 0.92
     },
     {
       id: 'female_in',
       nameEn: 'Pooja (Female - Warm Indian Accent)',
       nameHi: 'पूजा (महिला - भारतीय शैली)',
       gender: 'female',
-      pitch: 1.15,
+      pitch: 1.12,
       rate: 1.0
     },
     {
@@ -689,8 +689,8 @@ function initVoiceClockApp() {
       nameEn: 'Rohan (Male - Gentle Indian Accent)',
       nameHi: 'रोहन (पुरुष - भारतीय शैली)',
       gender: 'male',
-      pitch: 0.82,
-      rate: 0.98
+      pitch: 0.72,
+      rate: 0.95
     }
   ];
 
@@ -1905,6 +1905,42 @@ function initVoiceClockApp() {
   const privacyPolicyModal = $('privacyPolicyModal');
   const closePrivacyModalBtn = $('closePrivacyModalBtn');
   // -------------------- APP RELEASES & UPDATE SYSTEM --------------------
+  function compareVersions(v1, v2) {
+    const parts1 = String(v1).replace(/^v/i, '').split('.').map(n => parseInt(n, 10) || 0);
+    const parts2 = String(v2).replace(/^v/i, '').split('.').map(n => parseInt(n, 10) || 0);
+    for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
+      const p1 = parts1[i] || 0;
+      const p2 = parts2[i] || 0;
+      if (p1 > p2) return 1;
+      if (p1 < p2) return -1;
+    }
+    return 0;
+  }
+
+  const RELEASE_V1_1_0 = {
+    version: '1.1.0',
+    date: 'October 2026',
+    date_hi: 'अक्टूबर 2026',
+    type: 'Official Feature & Performance Release',
+    type_hi: 'आधिकारिक फीचर एवं सुधार संस्करण',
+    size: 'Native Build',
+    size_hi: 'मूल संस्करण',
+    changelog: [
+      'Remind Family & Friends: Send remote reminders to loved ones',
+      'Realistic male & female distinct voice selections (6 voices)',
+      'Reliable full-screen lock screen alarm & task UI with snooze/dismiss',
+      'Instant snooze and dismiss responsiveness without lingering audio',
+      'Seamless in-app over-the-air update support'
+    ],
+    changelog_hi: [
+      'रिमाइंड फैमिली और फ्रेंड्स: प्रियजनों को दूर से रिमाइंडर भेजें',
+      'वास्तविक पुरुष और महिला की अलग-अलग 6 आवाजें',
+      'स्नूज़ और बंद करने के विकल्प के साथ लॉक स्क्रीन अलार्म इंटरफेस',
+      'तुरंत स्नूज़ और बंद करने की त्वरित प्रतिक्रिया',
+      'सहज इन-ऐप ओवर-द-एयर अपडेट'
+    ]
+  };
+
   const DEFAULT_FOUNDATION_RELEASE = {
     version: '1.0.0',
     date: 'September 2026',
@@ -1943,31 +1979,23 @@ function initVoiceClockApp() {
   try {
     savedReleases = JSON.parse(localStorage.getItem('vc_release_history') || '[]');
   } catch {}
-  if (!Array.isArray(savedReleases) || savedReleases.length === 0 || savedReleases.some(r => String(r.version).startsWith('2.'))) {
-    savedReleases = [DEFAULT_FOUNDATION_RELEASE];
+  if (!Array.isArray(savedReleases) || savedReleases.length === 0 || savedReleases.some(r => String(r.version).startsWith('2.')) || !savedReleases.some(r => r.version === '1.1.0')) {
+    savedReleases = [RELEASE_V1_1_0, DEFAULT_FOUNDATION_RELEASE];
     localStorage.setItem('vc_release_history', JSON.stringify(savedReleases));
   }
   const APP_RELEASES = savedReleases;
 
   let savedVer = localStorage.getItem('vc_installed_version');
-  if (!savedVer || savedVer.startsWith('2.')) {
-    savedVer = '1.0.0';
-    localStorage.setItem('vc_installed_version', '1.0.0');
+  if (!savedVer || savedVer.startsWith('2.') || compareVersions(savedVer, '1.1.0') < 0) {
+    savedVer = '1.1.0';
+    localStorage.setItem('vc_installed_version', '1.1.0');
     localStorage.removeItem('vc_pending_update');
   }
   let installedVersion = savedVer;
   let pendingUpdateRelease = JSON.parse(localStorage.getItem('vc_pending_update') || 'null');
-
-  function compareVersions(v1, v2) {
-    const parts1 = String(v1).replace(/^v/i, '').split('.').map(n => parseInt(n, 10) || 0);
-    const parts2 = String(v2).replace(/^v/i, '').split('.').map(n => parseInt(n, 10) || 0);
-    for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
-      const p1 = parts1[i] || 0;
-      const p2 = parts2[i] || 0;
-      if (p1 > p2) return 1;
-      if (p1 < p2) return -1;
-    }
-    return 0;
+  if (pendingUpdateRelease && compareVersions(pendingUpdateRelease.version, installedVersion) <= 0) {
+    localStorage.removeItem('vc_pending_update');
+    pendingUpdateRelease = null;
   }
 
   function getUpdateCount() {
@@ -2904,6 +2932,7 @@ function initVoiceClockApp() {
   setupVoicePreview('btnPreviewEditAlarmVoice', 'editAlarmVoice');
   setupVoicePreview('btnPreviewTaskVoice', 'taskVoice');
   setupVoicePreview('btnPreviewEditTaskVoice', 'editTaskVoice');
+  setupVoicePreview('btnPreviewFamilyVoice', 'familyVoiceSelect');
 
   function playAudioFile(src) {
     const audio = new Audio(src);
@@ -4257,6 +4286,9 @@ function initVoiceClockApp() {
         if (window.AndroidVoice && window.AndroidVoice.cancelAlarm) {
           window.AndroidVoice.cancelAlarm(id);
         }
+        if (window.AndroidVoice && window.AndroidVoice.syncAlarmDismiss) {
+          window.AndroidVoice.syncAlarmDismiss(id);
+        }
         if (currentActiveTaskId === id) {
           currentActiveTaskId = null;
           taskModal?.classList.remove('show');
@@ -4346,6 +4378,9 @@ function initVoiceClockApp() {
     }
     if (window.AndroidVoice && window.AndroidVoice.cancelAlarm) {
       window.AndroidVoice.cancelAlarm(id);
+    }
+    if (window.AndroidVoice && window.AndroidVoice.syncAlarmDismiss) {
+      window.AndroidVoice.syncAlarmDismiss(id);
     }
     if (currentActiveTaskId === id) {
       currentActiveTaskId = null;
@@ -4539,6 +4574,9 @@ function initVoiceClockApp() {
     if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
       window.AndroidVoice.scheduleAlarm(t.id, snoozeTime, t.title, 'task', t.title, t.voice || 'female_1');
     }
+    if (window.AndroidVoice && window.AndroidVoice.syncAlarmSnooze) {
+      window.AndroidVoice.syncAlarmSnooze(t.id, snoozeTime);
+    }
 
     if (currentActiveTaskId === taskId) {
       currentActiveTaskId = null;
@@ -4560,6 +4598,9 @@ function initVoiceClockApp() {
     }
     if (window.AndroidVoice && window.AndroidVoice.cancelAlarm) {
       window.AndroidVoice.cancelAlarm(taskId);
+    }
+    if (window.AndroidVoice && window.AndroidVoice.syncAlarmDismiss) {
+      window.AndroidVoice.syncAlarmDismiss(taskId);
     }
 
     t.ringing = false;
@@ -5359,6 +5400,28 @@ function initVoiceClockApp() {
   }
 
   window.handleNativeAlarmEvent = handleNativeAlarmEvent;
+
+  window.handleNativeAlarmTrigger = function(id, type, label) {
+    if (type === 'task') {
+      const t = tasks.find(x => x.id === id);
+      if (t) {
+        startTask(t);
+      } else {
+        currentActiveTaskId = id;
+        if (taskModalLabel) taskModalLabel.textContent = label || 'Task';
+        taskModal?.classList.add('show');
+      }
+    } else {
+      const a = alarms.find(x => x.id === id);
+      if (a) {
+        triggerAlarm(a);
+      } else {
+        currentActiveAlarmId = id;
+        if (modalLabel) modalLabel.textContent = label || 'Alarm';
+        alarmModal?.classList.add('show');
+      }
+    }
+  };
 
   window.addEventListener("nativeDismiss", function(e) {
     handleNativeAlarmEvent(e.detail?.id, "dismiss");

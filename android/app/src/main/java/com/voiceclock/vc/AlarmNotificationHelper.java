@@ -14,7 +14,7 @@ import androidx.core.app.NotificationCompat;
 
 public class AlarmNotificationHelper {
 
-    public static final String CHANNEL_ID = "voice_clock_alarm_channel_v4";
+    public static final String CHANNEL_ID = "voice_clock_alarm_channel_v5";
     public static final int NOTIFICATION_ID = 1001;
 
     public static Notification createNotification(Context context, Intent alarmIntent) {
