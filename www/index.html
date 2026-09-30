@@ -668,6 +668,35 @@
           </label>
         </div>
 
+        <!-- Section: Family & Friends Connection -->
+        <div class="settings-section-title" id="secFamilyTitle">Family &amp; Friends Connect</div>
+
+        <div class="setting-item clickable" id="settingNotificationsBtn">
+          <div class="setting-text">
+            <div class="setting-label" style="display:flex;align-items:center;gap:8px;">
+              <span id="settingNotificationsLabel">Notifications</span>
+              <span id="settingsNotifBadge" class="about-update-pill notif-count-badge hidden">0</span>
+            </div>
+            <div class="setting-sub" id="settingNotificationsSub">Incoming reminders, requests &amp; responses</div>
+          </div>
+          <svg class="chevron-svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+            <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
+          </svg>
+        </div>
+
+        <div class="setting-item clickable" id="settingRemindFamilyBtn">
+          <div class="setting-text">
+            <div class="setting-label" style="display:flex;align-items:center;gap:8px;">
+              <span id="settingRemindFamilyLabel">Remind Family and Friends</span>
+              <span id="settingsFamilyBadge" class="about-update-pill family-status-pill">Connect</span>
+            </div>
+            <div class="setting-sub" id="settingRemindFamilySub">Send caring reminders to loved ones anywhere</div>
+          </div>
+          <svg class="chevron-svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+            <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
+          </svg>
+        </div>
+
         <!-- Section: About -->
         <div class="settings-section-title" id="secAboutTitle">About Voice Clock</div>
 
@@ -1014,6 +1043,348 @@
           <!-- Populated dynamically by script.js -->
         </div>
       </div>
+    <!-- ================= NOTIFICATIONS VIEW ================= -->
+    <div id="notificationsView" class="settings-page hidden">
+      <header class="settings-header">
+        <button id="closeNotificationsBtn" class="back-nav-btn" aria-label="Back">
+          <svg viewBox="0 0 24 24" width="24" height="24">
+            <path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+          </svg>
+        </button>
+        <h2 id="notificationsViewTitle">Notifications</h2>
+        <button id="clearAllNotifsBtn" class="header-action-text-btn" type="button">Clear</button>
+      </header>
+
+      <div class="settings-scroll-content">
+        <div id="notificationsList" class="notifications-container">
+          <!-- Populated dynamically by script.js -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= CREATE VC ACCOUNT VIEW ================= -->
+    <div id="vcAccountCreateView" class="settings-page hidden">
+      <header class="settings-header">
+        <button id="closeVcCreateBtn" class="back-nav-btn" aria-label="Back">
+          <svg viewBox="0 0 24 24" width="24" height="24">
+            <path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+          </svg>
+        </button>
+        <h2 id="vcCreateTitle">Create VC Account</h2>
+      </header>
+
+      <div class="settings-scroll-content family-auth-scroll">
+        <div class="family-hero-card">
+          <div class="family-hero-icon-wrap">
+            <svg viewBox="0 0 24 24" width="36" height="36" fill="currentColor">
+              <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+            </svg>
+          </div>
+          <h3 id="familyHeroHeading">Stay Connected with Family</h3>
+          <p id="familyHeroDesc">Remind parents to take medicine, ask kids if they had lunch, or schedule caring tasks for friends anywhere in the world.</p>
+        </div>
+
+        <div class="card family-auth-card">
+          <div class="family-input-group">
+            <label class="family-input-label" id="lblVcName" for="vcInputName">Your Name:</label>
+            <input type="text" id="vcInputName" class="family-text-input adjstwdth" placeholder="e.g. Papa, Beta, Ayush" autocomplete="name" required>
+          </div>
+
+          <div class="family-input-group">
+            <label class="family-input-label" id="lblVcEmail" for="vcInputEmail">Email Address (for verification):</label>
+            <input type="email" id="vcInputEmail" class="family-text-input adjstwdth" placeholder="e.g. name@example.com" autocomplete="email" required>
+          </div>
+
+          <button id="btnCreateVcAccount" class="btn primary-btn family-submit-btn" type="button">
+            <span id="btnCreateVcAccountText">Create Account &amp; Send OTP</span>
+          </button>
+
+          <div class="family-auth-toggle-row">
+            <button id="linkLoginVcAccount" class="family-link-btn" type="button">Already have a VC ID? Restore Account</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= EMAIL OTP VERIFY VIEW ================= -->
+    <div id="vcOtpVerifyView" class="settings-page hidden">
+      <header class="settings-header">
+        <button id="closeVcOtpBtn" class="back-nav-btn" aria-label="Back">
+          <svg viewBox="0 0 24 24" width="24" height="24">
+            <path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+          </svg>
+        </button>
+        <h2 id="vcOtpTitle">Verify Email</h2>
+      </header>
+
+      <div class="settings-scroll-content family-auth-scroll">
+        <div class="family-hero-card">
+          <div class="family-hero-icon-wrap mail-icon-wrap">
+            <svg viewBox="0 0 24 24" width="36" height="36" fill="currentColor">
+              <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+            </svg>
+          </div>
+          <h3 id="vcOtpHeroHeading">Enter 8-Digit OTP</h3>
+          <p id="vcOtpEmailDisplay" class="vc-otp-email-text">Verification code sent to your email address.</p>
+        </div>
+
+        <div class="card family-auth-card">
+          <!-- Active Demo / Test helper banner for zero-friction testing -->
+          <div id="vcOtpDemoBanner" class="vc-otp-demo-card">
+            <span class="otp-hint-badge">LIVE OTP CODE</span>
+            <div class="otp-hint-code" id="vcOtpCodeDisplay">--------</div>
+            <button type="button" id="btnCopyDemoOtp" class="btn-copy-otp">Tap to Autofill</button>
+          </div>
+
+          <div class="family-input-group">
+            <label class="family-input-label" id="lblVcOtp" for="vcInputOtp">Enter 8-Digit Code:</label>
+            <input type="text" id="vcInputOtp" class="family-otp-input" placeholder="8-Digit OTP" maxlength="8" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code">
+          </div>
+
+          <div class="family-otp-actions-row">
+            <button id="btnVerifyVcOtp" class="btn primary-btn family-verify-btn" type="button">
+              <span id="btnVerifyVcOtpText">Verify Email</span>
+            </button>
+            <button id="btnResendVcOtp" class="btn secondary-btn family-resend-btn" type="button">
+              <span id="btnResendVcOtpText">Resend OTP</span>
+            </button>
+          </div>
+          <div id="otpTimerDisplay" class="otp-timer-sub">Resend available in 60s</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= REMIND FAMILY & FRIENDS MAIN HUB ================= -->
+    <div id="remindFamilyHubView" class="settings-page hidden">
+      <!-- Hub Header with Sidebar Toggle -->
+      <header class="settings-header family-hub-header">
+        <button id="btnToggleFamilySidebar" class="back-nav-btn hamburger-nav-btn" type="button" aria-label="Open Menu">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+            <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
+          </svg>
+        </button>
+        <h2 id="familyHubTitle" class="hub-header-title">Remind Family &amp; Friends</h2>
+        <div class="hub-header-actions">
+          <button id="btnHubNotifications" class="hub-icon-action-btn" type="button" aria-label="Notifications">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+              <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+            </svg>
+            <span id="hubNotifBadge" class="about-update-pill hub-notif-pill hidden">0</span>
+          </button>
+          <button id="closeFamilyHubBtn" class="back-nav-btn" type="button" aria-label="Back">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+              <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- Slide-out Left Sidebar Drawer -->
+      <div id="familySidebarOverlay" class="sidebar-backdrop hidden"></div>
+      <aside id="remindFamilySidebar" class="family-left-sidebar hidden">
+        <div class="sidebar-user-card">
+          <div class="sidebar-avatar-circle" id="sidebarAvatar">VC</div>
+          <div class="sidebar-user-info">
+            <div id="sidebarUserName" class="sidebar-user-name">User Name</div>
+            <div class="sidebar-vcid-pill" id="btnCopySidebarVcId" title="Tap to copy VC ID">
+              <span id="sidebarUserVcId">VC-XXXX-XXXX-XXXX-XXXX</span>
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <nav class="sidebar-nav-list">
+          <button type="button" id="navSendReminderBtn" class="sidebar-nav-item active">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+            <span id="navSendReminderText">Send Reminder</span>
+          </button>
+          <button type="button" id="navSentRemindersBtn" class="sidebar-nav-item">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+            <span id="navSentRemindersText">Sent Reminders</span>
+            <span id="badgeSentCount" class="sidebar-badge-count">0</span>
+          </button>
+          <button type="button" id="navReceivedRemindersBtn" class="sidebar-nav-item">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 3H4.99c-1.11 0-1.98.89-1.98 2L3 19c0 1.1.88 2 1.99 2H19c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 12h-4c0 1.66-1.35 3-3 3s-3-1.34-3-3H4.99V5H19v10z"/></svg>
+            <span id="navReceivedRemindersText">Received Reminders</span>
+            <span id="badgeReceivedCount" class="sidebar-badge-count">0</span>
+          </button>
+          <button type="button" id="navMyAccountBtn" class="sidebar-nav-item">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+            <span id="navMyAccountText">My VC Account</span>
+          </button>
+          <button type="button" id="navNotificationsBtn" class="sidebar-nav-item">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+            <span id="navNotificationsText">Notifications</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="sidebar-live-sync-indicator">
+            <span class="status-indicator-dot active"></span>
+            <span id="sidebarSyncStatus">Real-Time Cloud Sync Active</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Scroll Content Area -->
+      <div class="settings-scroll-content family-hub-content">
+        
+        <!-- SUBVIEW 1: SEND REMINDER (HOME) -->
+        <section id="subviewSendReminder" class="hub-subview">
+          <div class="card form-card family-form-card">
+            <div class="subview-header">
+              <h3 id="sendReminderHeading">Send a Caring Reminder</h3>
+              <p id="sendReminderSub">The reminder will alert your family member's phone and add to their Voice Clock tasks upon acceptance.</p>
+            </div>
+
+            <!-- Recipient VC ID -->
+            <div class="family-input-group">
+              <div class="label-with-action">
+                <label class="family-input-label" id="lblTargetVcId" for="targetVcIdInput">Recipient VC ID:</label>
+                <button type="button" id="btnPasteVcId" class="btn-text-action">Paste</button>
+              </div>
+              <input type="text" id="targetVcIdInput" class="family-text-input adjstwdth monospace-input" placeholder="e.g. VC-8K2M-9P4W-7N1Q-3X5R" autocomplete="off">
+              <!-- Recent recipient chips -->
+              <div id="recentVcIdsWrap" class="recent-chips-wrap hidden">
+                <span class="recent-chips-label">Recent:</span>
+                <div id="recentVcIdsList" class="recent-chips-list"></div>
+              </div>
+            </div>
+
+            <!-- Reminder Message / Title -->
+            <div class="family-input-group">
+              <label class="family-input-label" id="lblReminderTitle" for="reminderTitleInput">Reminder Message / Task:</label>
+              <textarea id="reminderTitleInput" class="adjstwdth" rows="2" placeholder="e.g. Papa, did you take your afternoon medicine?"></textarea>
+              
+              <!-- Quick caring reminder chips -->
+              <div class="quick-reminder-chips">
+                <button type="button" class="quick-chip" data-text="Papa / Maa, medicine le li? 💊">Medicine 💊</button>
+                <button type="button" class="quick-chip" data-text="Khana kha lena time par! 🍲">Khana 🍲</button>
+                <button type="button" class="quick-chip" data-text="Paani peena mat bhoolna! 💧">Water 💧</button>
+                <button type="button" class="quick-chip" data-text="Evening walk / exercise ka time! 🚶">Walk 🚶</button>
+              </div>
+            </div>
+
+            <!-- Date and Time Picker -->
+            <div class="family-input-group">
+              <label class="family-input-label" id="lblReminderTime" for="reminderDateTimeInput">Date &amp; Time:</label>
+              <input type="datetime-local" id="reminderDateTimeInput" class="adjstwdth">
+            </div>
+
+            <!-- Repeat Days -->
+            <div class="repeat-days-group" id="familyRepeatDaysGroup">
+              <label class="repeat-days-label" id="familyRepeatDaysLabel">Repeat on Days (Optional):</label>
+              <div class="day-pills-row" id="familyReminderDayPills">
+                <button type="button" class="day-pill" data-day="0" title="Sunday">S</button>
+                <button type="button" class="day-pill" data-day="1" title="Monday">M</button>
+                <button type="button" class="day-pill" data-day="2" title="Tuesday">T</button>
+                <button type="button" class="day-pill" data-day="3" title="Wednesday">W</button>
+                <button type="button" class="day-pill" data-day="4" title="Thursday">T</button>
+                <button type="button" class="day-pill" data-day="5" title="Friday">F</button>
+                <button type="button" class="day-pill" data-day="6" title="Saturday">S</button>
+              </div>
+            </div>
+
+            <!-- Voice Selection -->
+            <div class="voice-select-group" id="familyVoiceGroup">
+              <label class="voice-select-label" for="familyVoiceSelect" id="familyVoiceSelectLabel">Speak With Voice:</label>
+              <div class="voice-select-row">
+                <select id="familyVoiceSelect" class="option-bgc voice-dropdown adjstwdth">
+                  <option value="female_1">Aria (Female - Clear &amp; Soft)</option>
+                  <option value="male_1">Guy (Male - Deep &amp; Bold)</option>
+                  <option value="female_2">Jenny (Female - Friendly &amp; Bright)</option>
+                  <option value="male_2">David (Male - Calm &amp; Confident)</option>
+                  <option value="female_in">Pooja (Female - Warm Indian Accent)</option>
+                  <option value="male_in">Rohan (Male - Gentle Indian Accent)</option>
+                </select>
+                <button type="button" class="btn-preview-voice" id="btnPreviewFamilyVoice" title="Listen Voice">
+                  <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                  <span>Listen</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Send Button -->
+            <button id="btnSendFamilyReminder" class="btn primary-btn send-reminder-btn" type="button">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+              <span id="btnSendFamilyReminderText">Send Reminder</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- SUBVIEW 2: SENT REMINDERS -->
+        <section id="subviewSentReminders" class="hub-subview hidden">
+          <div class="subview-header">
+            <h3 id="sentRemindersHeading">Sent Reminders</h3>
+            <p id="sentRemindersSub">Track all reminders sent to your loved ones and their real-time acceptance status.</p>
+          </div>
+          <div id="sentRemindersList" class="reminders-list-container">
+            <!-- Dynamic sent reminders -->
+          </div>
+        </section>
+
+        <!-- SUBVIEW 3: RECEIVED REMINDERS -->
+        <section id="subviewReceivedReminders" class="hub-subview hidden">
+          <div class="subview-header">
+            <h3 id="receivedRemindersHeading">Received Reminders</h3>
+            <p id="receivedRemindersSub">Reminders sent to you by family and friends. Accept to add them to your tasks.</p>
+          </div>
+          <div id="receivedRemindersList" class="reminders-list-container">
+            <!-- Dynamic received reminders -->
+          </div>
+        </section>
+
+        <!-- SUBVIEW 4: MY VC ACCOUNT -->
+        <section id="subviewMyAccount" class="hub-subview hidden">
+          <div class="card family-account-card">
+            <div class="account-profile-header">
+              <div class="account-big-avatar" id="accountBigAvatar">VC</div>
+              <div class="account-profile-meta">
+                <div class="account-name-row">
+                  <h3 id="accountViewName" class="account-name-text">User Name</h3>
+                  <button type="button" id="btnEditAccountName" class="btn-icon-subtle" title="Edit Name">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                  </button>
+                </div>
+                <div id="accountViewEmail" class="account-email-text">user@example.com</div>
+                <div class="account-verified-tag">✓ Email Verified</div>
+              </div>
+            </div>
+
+            <!-- High-Tech Unique VC ID Card -->
+            <div class="vc-id-display-card">
+              <div class="vc-id-card-top">
+                <span class="vc-id-card-tag">YOUR UNIQUE VOICE CLOCK ID</span>
+                <span class="vc-id-shield-badge">🔒 Zero-Guessing Protected</span>
+              </div>
+              <div class="vc-id-big-value" id="accountViewVcId">VC-XXXX-XXXX-XXXX-XXXX</div>
+              <div class="vc-id-actions-row">
+                <button type="button" id="btnCopyAccountVcId" class="btn-copy-vcid">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+                  <span>Copy ID</span>
+                </button>
+                <button type="button" id="btnShareAccountVcId" class="btn-share-vcid">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
+                  <span>Share with Family</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Privacy Guarantee Card -->
+            <div class="vc-security-card">
+              <h4>🛡️ Privacy &amp; Cryptographic Security</h4>
+              <p>Your VC ID is generated using 128-bit cryptographic pseudo-random entropy with checksum protection. Even if someone inspects 10,000 IDs, it is mathematically impossible to predict or derive any user's VC ID.</p>
+            </div>
+
+            <!-- Switch / Logout Button -->
+            <button type="button" id="btnLogoutAccount" class="btn-ghost btn-danger-ghost">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+              <span>Switch / Log Out Account</span>
+            </button>
+          </div>
+        </section>
+
+      </div>
     </div>
 
     <!-- ================= OPTIONS PICKER MODAL (OPTION BAR) ================= -->
@@ -1276,11 +1647,15 @@
       }
 
       // Close any active overlay views/modals
-      var overlays = ['settingsView', 'aboutView', 'softwareUpdateView', 'timezoneView', 'optionsDialogModal', 'locationPrivacyModal', 'privacyPolicyModal', 'dateTimeModal'];
+      var overlays = ['settingsView', 'aboutView', 'softwareUpdateView', 'timezoneView', 'optionsDialogModal', 'locationPrivacyModal', 'privacyPolicyModal', 'dateTimeModal', 'notificationsView', 'vcAccountCreateView', 'vcOtpVerifyView', 'remindFamilyHubView'];
       for (var k = 0; k < overlays.length; k++) {
         var el = document.getElementById(overlays[k]);
         if (el) el.classList.add('hidden');
       }
+      var sb = document.getElementById('remindFamilySidebar');
+      if (sb) sb.classList.add('hidden');
+      var sbo = document.getElementById('familySidebarOverlay');
+      if (sbo) sbo.classList.add('hidden');
 
       // Reset forms to list view
       if (tabId === 'alarmTab') {

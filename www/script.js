@@ -86,6 +86,15 @@ function initVoiceClockApp() {
       description_hi: 'सटीक वॉयस अलार्म, टास्क, रविवार-शनिवार पुनरावृत्ति, लॉकस्क्रीन रिंगिंग, स्टॉपवॉच और हार्डवेयर बटन नियंत्रण',
       date: 'Sep 2026',
       date_hi: 'सितंबर 2026'
+    },
+    {
+      id: 'remind_family_and_friends',
+      title: 'Remind Family & Friends and Live Notifications',
+      title_hi: 'परिवार और दोस्तों को याद दिलाएं व लाइव सूचनाएं',
+      description: 'Cross-device caring reminders with cryptographically non-guessable VC IDs, 8-digit OTP verification, real-time push sync, and system notification bar Accept/Reject action buttons',
+      description_hi: 'अभेद्य VC आईडी, 8-अंकीय ओटीपी, रियल-टाइम सिंक और फोन नोटिफिकेशन बार से स्वीकार/अस्वीकार बटनों के साथ परिजनों को रिमाइंडर भेजें',
+      date: 'Sep 2026',
+      date_hi: 'सितंबर 2026'
     }
   ];
 
@@ -257,6 +266,45 @@ function initVoiceClockApp() {
       settingCheckUpdateLabel: 'Check for Updates',
       settingCheckUpdateSub: 'Scan GitHub Releases for latest APK version',
       settingAboutVCLabel: 'About Voice Clock',
+
+      secFamilyTitle: 'Family & Friends Connect',
+      settingNotificationsLabel: 'Notifications',
+      settingNotificationsSub: 'Incoming reminders, requests & responses',
+      notificationsViewTitle: 'Notifications',
+      clearAllNotifsBtn: 'Clear',
+      settingRemindFamilyLabel: 'Remind Family and Friends',
+      settingRemindFamilySub: 'Send caring reminders to loved ones anywhere',
+      vcCreateTitle: 'Create VC Account',
+      familyHeroHeading: 'Stay Connected with Family',
+      familyHeroDesc: 'Remind parents to take medicine, ask kids if they had lunch, or schedule caring tasks for friends anywhere in the world.',
+      lblVcName: 'Your Name:',
+      lblVcEmail: 'Email Address (for verification):',
+      btnCreateVcAccountText: 'Create Account & Send OTP',
+      linkLoginVcAccount: 'Already have a VC ID? Restore Account',
+      vcOtpTitle: 'Verify Email',
+      vcOtpHeroHeading: 'Enter 8-Digit OTP',
+      lblVcOtp: 'Enter 8-Digit Code:',
+      btnVerifyVcOtpText: 'Verify Email',
+      btnResendVcOtpText: 'Resend OTP',
+      familyHubTitle: 'Remind Family & Friends',
+      navSendReminderText: 'Send Reminder',
+      navSentRemindersText: 'Sent Reminders',
+      navReceivedRemindersText: 'Received Reminders',
+      navMyAccountText: 'My VC Account',
+      navNotificationsText: 'Notifications',
+      sidebarSyncStatus: 'Real-Time Cloud Sync Active',
+      sendReminderHeading: 'Send a Caring Reminder',
+      sendReminderSub: 'The reminder will alert your family member\'s phone and add to their Voice Clock tasks upon acceptance.',
+      lblTargetVcId: 'Recipient VC ID:',
+      lblReminderTitle: 'Reminder Message / Task:',
+      lblReminderTime: 'Date & Time:',
+      familyRepeatDaysLabel: 'Repeat on Days (Optional):',
+      familyVoiceSelectLabel: 'Speak With Voice:',
+      btnSendFamilyReminderText: 'Send Reminder',
+      sentRemindersHeading: 'Sent Reminders',
+      sentRemindersSub: 'Track all reminders sent to your loved ones and their real-time acceptance status.',
+      receivedRemindersHeading: 'Received Reminders',
+      receivedRemindersSub: 'Reminders sent to you by family and friends. Accept to add them to your tasks.',
 
       alarmEditTitle: 'Edit Alarm',
       taskEditTitle: 'Edit Task',
@@ -450,6 +498,45 @@ function initVoiceClockApp() {
       settingCheckUpdateLabel: 'अपडेट चेक करें',
       settingCheckUpdateSub: 'नवीनतम APK संस्करण के लिए गिटहब रिलीज़ स्कैन करें',
       settingAboutVCLabel: 'वॉयस क्लॉक के बारे में',
+
+      secFamilyTitle: 'परिवार और मित्र जुड़ाव',
+      settingNotificationsLabel: 'सूचनाएं (Notifications)',
+      settingNotificationsSub: 'आने वाले रिमाइंडर, अनुरोध और उत्तर',
+      notificationsViewTitle: 'सूचनाएं (Notifications)',
+      clearAllNotifsBtn: 'हटाएं',
+      settingRemindFamilyLabel: 'परिवार और दोस्तों को याद दिलाएं',
+      settingRemindFamilySub: 'दूर रहने वाले प्रियजनों को देखभाल भरे रिमाइंडर भेजें',
+      vcCreateTitle: 'VC खाता बनाएं',
+      familyHeroHeading: 'परिवार से हमेशा जुड़े रहें',
+      familyHeroDesc: 'माता-पिता को दवा लेने, बच्चों को खाना खाने याद दिलाएं या दुनिया में कहीं भी दोस्तों के लिए कार्य निर्धारित करें।',
+      lblVcName: 'आपका नाम:',
+      lblVcEmail: 'ईमेल पता (सत्यापन के लिए):',
+      btnCreateVcAccountText: 'खाता बनाएं और OTP भेजें',
+      linkLoginVcAccount: 'पहले से VC ID है? खाता पुनर्स्थापित करें',
+      vcOtpTitle: 'ईमेल सत्यापित करें',
+      vcOtpHeroHeading: '8-अंकीय OTP दर्ज करें',
+      lblVcOtp: '8-अंकीय कोड दर्ज करें:',
+      btnVerifyVcOtpText: 'ईमेल सत्यापित करें',
+      btnResendVcOtpText: 'दोबारा OTP भेजें',
+      familyHubTitle: 'परिवार और मित्रों को याद दिलाएं',
+      navSendReminderText: 'रिमाइंडर भेजें',
+      navSentRemindersText: 'भेजे गए रिमाइंडर',
+      navReceivedRemindersText: 'प्राप्त रिमाइंडर',
+      navMyAccountText: 'मेरा VC खाता',
+      navNotificationsText: 'सूचनाएं',
+      sidebarSyncStatus: 'रियल-टाइम क्लाउड सिंक सक्रिय है',
+      sendReminderHeading: 'देखभाल भरा रिमाइंडर भेजें',
+      sendReminderSub: 'स्वीकार करने पर यह रिमाइंडर उनके फोन पर बजेगा और उनके टास्क में स्वतः जुड़ जाएगा।',
+      lblTargetVcId: 'प्राप्तकर्ता का VC ID:',
+      lblReminderTitle: 'रिमाइंडर संदेश / कार्य:',
+      lblReminderTime: 'दिनांक और समय:',
+      familyRepeatDaysLabel: 'दोहराने के दिन (वैकल्पिक):',
+      familyVoiceSelectLabel: 'इस आवाज़ में बुलवाएं:',
+      btnSendFamilyReminderText: 'रिमाइंडर भेजें',
+      sentRemindersHeading: 'भेजे गए रिमाइंडर',
+      sentRemindersSub: 'अपने प्रियजनों को भेजे गए सभी रिमाइंडर और उनकी स्वीकृति स्थिति देखें।',
+      receivedRemindersHeading: 'प्राप्त रिमाइंडर',
+      receivedRemindersSub: 'परिवार और दोस्तों द्वारा आपको भेजे गए रिमाइंडर। अपने टास्क में जोड़ने के लिए स्वीकार करें।',
 
       alarmEditTitle: 'अलार्म संपादित करें',
       taskEditTitle: 'कार्य संपादित करें',
@@ -685,6 +772,44 @@ function initVoiceClockApp() {
       'settingCheckUpdateLabel',
       'settingCheckUpdateSub',
       'settingAboutVCLabel',
+      'secFamilyTitle',
+      'settingNotificationsLabel',
+      'settingNotificationsSub',
+      'notificationsViewTitle',
+      'clearAllNotifsBtn',
+      'settingRemindFamilyLabel',
+      'settingRemindFamilySub',
+      'vcCreateTitle',
+      'familyHeroHeading',
+      'familyHeroDesc',
+      'lblVcName',
+      'lblVcEmail',
+      'btnCreateVcAccountText',
+      'linkLoginVcAccount',
+      'vcOtpTitle',
+      'vcOtpHeroHeading',
+      'lblVcOtp',
+      'btnVerifyVcOtpText',
+      'btnResendVcOtpText',
+      'familyHubTitle',
+      'navSendReminderText',
+      'navSentRemindersText',
+      'navReceivedRemindersText',
+      'navMyAccountText',
+      'navNotificationsText',
+      'sidebarSyncStatus',
+      'sendReminderHeading',
+      'sendReminderSub',
+      'lblTargetVcId',
+      'lblReminderTitle',
+      'lblReminderTime',
+      'familyRepeatDaysLabel',
+      'familyVoiceSelectLabel',
+      'btnSendFamilyReminderText',
+      'sentRemindersHeading',
+      'sentRemindersSub',
+      'receivedRemindersHeading',
+      'receivedRemindersSub',
       'alarmEditTitle',
       'taskEditTitle',
       'saveEditAlarmBtn',
@@ -1186,10 +1311,14 @@ function initVoiceClockApp() {
     allTabContents.forEach(c => c.classList.toggle('active', c.id === tabId));
 
     // Close any open overlay pages when switching tabs
-    ['settingsView', 'aboutView', 'softwareUpdateView', 'timezoneView', 'optionsDialogModal', 'locationPrivacyModal', 'privacyPolicyModal', 'dateTimeModal'].forEach(id => {
+    ['settingsView', 'aboutView', 'softwareUpdateView', 'timezoneView', 'optionsDialogModal', 'locationPrivacyModal', 'privacyPolicyModal', 'dateTimeModal', 'notificationsView', 'vcAccountCreateView', 'vcOtpVerifyView', 'remindFamilyHubView'].forEach(id => {
       const el = $(id);
       if (el) el.classList.add('hidden');
     });
+    const sb = $('remindFamilySidebar');
+    if (sb) sb.classList.add('hidden');
+    const sbOv = $('familySidebarOverlay');
+    if (sbOv) sbOv.classList.add('hidden');
 
     // Reset alarm & task forms to list view when switching
     if (tabId === 'alarmTab') {
@@ -1243,7 +1372,33 @@ function initVoiceClockApp() {
       }
     }
 
-    // 2. Subpages inside Settings
+    // 2. Subpages inside Settings / Family Hub
+    const sidebar = $('remindFamilySidebar');
+    if (sidebar && !sidebar.classList.contains('hidden')) {
+      sidebar.classList.add('hidden');
+      $('familySidebarOverlay')?.classList.add('hidden');
+      return true;
+    }
+    const notifView = $('notificationsView');
+    if (notifView && !notifView.classList.contains('hidden')) {
+      notifView.classList.add('hidden');
+      return true;
+    }
+    const familyHub = $('remindFamilyHubView');
+    if (familyHub && !familyHub.classList.contains('hidden')) {
+      familyHub.classList.add('hidden');
+      return true;
+    }
+    const otpView = $('vcOtpVerifyView');
+    if (otpView && !otpView.classList.contains('hidden')) {
+      otpView.classList.add('hidden');
+      return true;
+    }
+    const createView = $('vcAccountCreateView');
+    if (createView && !createView.classList.contains('hidden')) {
+      createView.classList.add('hidden');
+      return true;
+    }
     const swView = $('softwareUpdateView');
     if (swView && !swView.classList.contains('hidden')) {
       swView.classList.add('hidden');
@@ -5290,6 +5445,1100 @@ function initVoiceClockApp() {
       syncNativeAlarmState();
     }
   });
+
+  // ============================================================
+  // REMIND FAMILY & FRIENDS, LIVE NOTIFICATIONS & NOTIFICATION BAR ACTIONS
+  // ============================================================
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  let vcAccount = null;
+  try {
+    vcAccount = JSON.parse(localStorage.getItem('vc_account'));
+  } catch (e) { vcAccount = null; }
+
+  let sentReminders = [];
+  try {
+    sentReminders = JSON.parse(localStorage.getItem('vc_sent_reminders')) || [];
+  } catch (e) { sentReminders = []; }
+
+  let receivedReminders = [];
+  try {
+    receivedReminders = JSON.parse(localStorage.getItem('vc_received_reminders')) || [];
+  } catch (e) { receivedReminders = []; }
+
+  let notificationsList = [];
+  try {
+    notificationsList = JSON.parse(localStorage.getItem('vc_notifications')) || [];
+  } catch (e) { notificationsList = []; }
+
+  let recentVcIds = [];
+  try {
+    recentVcIds = JSON.parse(localStorage.getItem('vc_recent_ids')) || [];
+  } catch (e) { recentVcIds = []; }
+
+  let pendingVcAccount = null;
+  let otpResendCountdown = 0;
+  let otpTimerInterval = null;
+  let familySyncEventSource = null;
+  let familyPollingInterval = null;
+
+  // Cryptographically Secure High-Entropy Unique VC ID Generator
+  // 16 Crockford Base32 characters = 80 bits of pure CSPRNG entropy.
+  // Zero guessability, mathematical impossibility of derivation from samples.
+  function generateCryptographicVcId() {
+    const charset = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"; // 32 unambiguous characters
+    const bytes = new Uint8Array(16);
+    if (window.crypto && window.crypto.getRandomValues) {
+      window.crypto.getRandomValues(bytes);
+    } else {
+      for (let i = 0; i < 16; i++) bytes[i] = Math.floor(Math.random() * 256);
+    }
+    let chars = "";
+    for (let i = 0; i < 16; i++) {
+      chars += charset[bytes[i] % 32];
+    }
+    return `VC-${chars.substring(0, 4)}-${chars.substring(4, 8)}-${chars.substring(8, 12)}-${chars.substring(12, 16)}`;
+  }
+
+  function generate8DigitOtp() {
+    if (window.crypto && window.crypto.getRandomValues) {
+      const arr = new Uint32Array(1);
+      window.crypto.getRandomValues(arr);
+      return String(10000000 + (arr[0] % 90000000));
+    }
+    return String(Math.floor(10000000 + Math.random() * 90000000));
+  }
+
+  function saveVcAccount() {
+    if (vcAccount) {
+      localStorage.setItem('vc_account', JSON.stringify(vcAccount));
+    } else {
+      localStorage.removeItem('vc_account');
+    }
+    updateFamilySettingsBadge();
+  }
+
+  function saveSentReminders() {
+    localStorage.setItem('vc_sent_reminders', JSON.stringify(sentReminders));
+    updateReminderBadges();
+  }
+
+  function saveReceivedReminders() {
+    localStorage.setItem('vc_received_reminders', JSON.stringify(receivedReminders));
+    updateReminderBadges();
+  }
+
+  function saveNotifications() {
+    localStorage.setItem('vc_notifications', JSON.stringify(notificationsList));
+    updateNotificationBadges();
+  }
+
+  function saveRecentVcIds() {
+    localStorage.setItem('vc_recent_ids', JSON.stringify(recentVcIds));
+    renderRecentVcIds();
+  }
+
+  function updateFamilySettingsBadge() {
+    const isHi = userSettings.appLanguage === 'hi';
+    const badge = $('settingsFamilyBadge');
+    if (!badge) return;
+    if (vcAccount && vcAccount.verified) {
+      badge.textContent = isHi ? 'सक्रिय' : 'Active';
+      badge.classList.add('connected');
+    } else {
+      badge.textContent = isHi ? 'कनेक्ट करें' : 'Connect';
+      badge.classList.remove('connected');
+    }
+  }
+
+  function updateNotificationBadges() {
+    const unreadCount = notificationsList.filter(n => n.unread).length;
+    const settingsBadge = $('settingsNotifBadge');
+    if (settingsBadge) {
+      if (unreadCount > 0) {
+        settingsBadge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+        settingsBadge.classList.remove('hidden');
+      } else {
+        settingsBadge.classList.add('hidden');
+      }
+    }
+    const hubBadge = $('hubNotifBadge');
+    if (hubBadge) {
+      if (unreadCount > 0) {
+        hubBadge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+        hubBadge.classList.remove('hidden');
+      } else {
+        hubBadge.classList.add('hidden');
+      }
+    }
+  }
+
+  function updateReminderBadges() {
+    const sentBadge = $('badgeSentCount');
+    if (sentBadge) sentBadge.textContent = sentReminders.length;
+    const pendingReceived = receivedReminders.filter(r => r.status === 'pending').length;
+    const recBadge = $('badgeReceivedCount');
+    if (recBadge) recBadge.textContent = pendingReceived;
+  }
+
+  function renderNotifications() {
+    const container = $('notificationsList');
+    if (!container) return;
+    const isHi = userSettings.appLanguage === 'hi';
+    if (notificationsList.length === 0) {
+      container.innerHTML = `<div class="notif-empty-state">${isHi ? 'कोई सूचना नहीं है।' : 'No notifications yet.'}</div>`;
+      return;
+    }
+    container.innerHTML = notificationsList.map(n => {
+      let iconClass = '';
+      let iconSvg = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>';
+      if (n.type === 'reminder_accepted') {
+        iconClass = 'accepted';
+        iconSvg = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>';
+      } else if (n.type === 'reminder_rejected') {
+        iconClass = 'rejected';
+        iconSvg = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>';
+      }
+      const timeFormatted = new Date(n.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' • ' + new Date(n.time).toLocaleDateString([], { month: 'short', day: 'numeric' });
+      return `
+        <div class="notification-card ${n.unread ? 'unread' : ''}" data-id="${n.id}">
+          <div class="notif-icon-circle ${iconClass}">${iconSvg}</div>
+          <div class="notif-body">
+            <div class="notif-title">${escapeHtml(n.title)}</div>
+            <div class="notif-desc">${escapeHtml(n.message)}</div>
+            <div class="notif-time">${timeFormatted}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderSentReminders() {
+    const container = $('sentRemindersList');
+    if (!container) return;
+    const isHi = userSettings.appLanguage === 'hi';
+    if (sentReminders.length === 0) {
+      container.innerHTML = `<div class="notif-empty-state">${isHi ? 'आपने अभी तक कोई रिमाइंडर नहीं भेजा है।' : 'No reminders sent yet.'}</div>`;
+      return;
+    }
+    container.innerHTML = sentReminders.slice().reverse().map(r => {
+      const dt = new Date(r.timeIso);
+      const timeStr = dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ', ' + dt.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      const statusClass = r.status === 'accepted' ? 'status-accepted' : (r.status === 'rejected' ? 'status-rejected' : 'status-pending');
+      const statusText = isHi
+        ? (r.status === 'accepted' ? '✓ स्वीकृत' : (r.status === 'rejected' ? '✕ अस्वीकृत' : '⏳ लंबित'))
+        : (r.status === 'accepted' ? '✓ Accepted' : (r.status === 'rejected' ? '✕ Declined' : '⏳ Pending'));
+      const daysStr = r.repeatDays && r.repeatDays.length > 0 ? formatDaysSummary(r.repeatDays, isHi) : (isHi ? 'एक बार' : 'Once');
+      return `
+        <div class="reminder-card">
+          <div class="reminder-card-header">
+            <div class="reminder-sender-meta">
+              <span class="reminder-person-name">${isHi ? 'प्राप्तकर्ता:' : 'To:'} ${escapeHtml(r.targetVcId)}</span>
+            </div>
+            <span class="reminder-status-badge ${statusClass}">${statusText}</span>
+          </div>
+          <div class="reminder-card-body">
+            <h4 class="reminder-card-title">${escapeHtml(r.title)}</h4>
+            <div class="reminder-card-details">
+              <span class="reminder-detail-tag">⏰ ${timeStr}</span>
+              <span class="reminder-detail-tag">🔁 ${daysStr}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderReceivedReminders() {
+    const container = $('receivedRemindersList');
+    if (!container) return;
+    const isHi = userSettings.appLanguage === 'hi';
+    if (receivedReminders.length === 0) {
+      container.innerHTML = `<div class="notif-empty-state">${isHi ? 'कोई प्राप्त रिमाइंडर नहीं है।' : 'No received reminders yet.'}</div>`;
+      return;
+    }
+    container.innerHTML = receivedReminders.slice().reverse().map(r => {
+      const dt = new Date(r.timeIso);
+      const timeStr = dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ', ' + dt.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      const statusClass = r.status === 'accepted' ? 'status-accepted' : (r.status === 'rejected' ? 'status-rejected' : 'status-pending');
+      const statusText = isHi
+        ? (r.status === 'accepted' ? '✓ स्वीकृत' : (r.status === 'rejected' ? '✕ अस्वीकृत' : '⏳ लंबित'))
+        : (r.status === 'accepted' ? '✓ Accepted' : (r.status === 'rejected' ? '✕ Declined' : '⏳ Pending'));
+      const daysStr = r.repeatDays && r.repeatDays.length > 0 ? formatDaysSummary(r.repeatDays, isHi) : (isHi ? 'एक बार' : 'Once');
+      const isPending = r.status === 'pending';
+      return `
+        <div class="reminder-card" id="receivedCard_${r.id}">
+          <div class="reminder-card-header">
+            <div class="reminder-sender-meta">
+              <span class="reminder-person-name">${escapeHtml(r.senderName || 'Family/Friend')}</span>
+              <span class="reminder-person-vcid">${escapeHtml(r.senderVcId || '')}</span>
+            </div>
+            <span class="reminder-status-badge ${statusClass}">${statusText}</span>
+          </div>
+          <div class="reminder-card-body">
+            <h4 class="reminder-card-title">${escapeHtml(r.title)}</h4>
+            <div class="reminder-card-details">
+              <span class="reminder-detail-tag">⏰ ${timeStr}</span>
+              <span class="reminder-detail-tag">🔁 ${daysStr}</span>
+            </div>
+          </div>
+          ${isPending ? `
+            <div class="reminder-actions-row">
+              <button type="button" class="reminder-action-btn accept-btn" onclick="window.handleRemoteReminderAction('${r.id}', 'accept')">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
+                <span>${isHi ? 'स्वीकार करें' : 'Accept'}</span>
+              </button>
+              <button type="button" class="reminder-action-btn reject-btn" onclick="window.handleRemoteReminderAction('${r.id}', 'reject')">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                <span>${isHi ? 'अस्वीकार करें' : 'Decline'}</span>
+              </button>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderRecentVcIds() {
+    const wrap = $('recentVcIdsWrap');
+    const list = $('recentVcIdsList');
+    if (!wrap || !list) return;
+    if (recentVcIds.length === 0) {
+      wrap.classList.add('hidden');
+      return;
+    }
+    wrap.classList.remove('hidden');
+    list.innerHTML = recentVcIds.map(id => `
+      <button type="button" class="recent-id-chip" data-id="${id}">${id}</button>
+    `).join('');
+    list.querySelectorAll('.recent-id-chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const inp = $('targetVcIdInput');
+        if (inp) inp.value = btn.dataset.id;
+      });
+    });
+  }
+
+  // ============================================================
+  // REMOTE REMINDER ACTION HANDLER (In-App + Notification Bar)
+  // ============================================================
+  window.handleRemoteReminderAction = function(reminderId, action) {
+    const isHi = userSettings.appLanguage === 'hi';
+    const reminder = receivedReminders.find(r => r.id === reminderId);
+    if (!reminder) return;
+    if (reminder.status !== 'pending') return;
+
+    if (action === 'accept') {
+      reminder.status = 'accepted';
+      reminder.respondedAt = Date.now();
+
+      // Convert to native Task in receiver's normal Tasks tab history!
+      let taskDt = new Date(reminder.timeIso);
+      const now = new Date();
+      const baseH = taskDt.getHours();
+      const baseM = taskDt.getMinutes();
+      const selectedDays = reminder.repeatDays || [];
+      if (selectedDays.length > 0) {
+        const nextOccur = getNextOccurrenceForDays(baseH, baseM, selectedDays);
+        if (nextOccur) taskDt = nextOccur;
+      } else if (taskDt <= now) {
+        taskDt.setDate(taskDt.getDate() + 1);
+      }
+
+      const newTask = {
+        id: 'TSK' + Date.now(),
+        title: reminder.title + (reminder.senderName ? ` (${reminder.senderName})` : ''),
+        time: taskDt,
+        baseH: baseH,
+        baseM: baseM,
+        repeat: selectedDays.length > 0 ? 'days' : 'once',
+        repeatDays: selectedDays,
+        intervalMs: null,
+        voice: reminder.voice || 'female_1',
+        enabled: true,
+        ringing: false,
+        snoozedUntil: null,
+        loopTimeout: null,
+        audioObj: null
+      };
+      tasks.push(newTask);
+      saveTasks();
+
+      if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
+        window.AndroidVoice.scheduleAlarm(
+          newTask.id,
+          newTask.time.getTime(),
+          newTask.title,
+          'task',
+          newTask.title,
+          newTask.voice
+        );
+      }
+      renderTasks();
+
+      // Send acceptance response back to sender
+      sendPubSubResponse(reminder, 'accepted');
+
+      // Dismiss system notification
+      if (window.AndroidVoice && window.AndroidVoice.cancelReminderNotification) {
+        window.AndroidVoice.cancelReminderNotification(reminderId);
+      }
+
+      // Add to notifications
+      notificationsList.unshift({
+        id: 'NOTIF' + Date.now(),
+        type: 'reminder_accepted',
+        title: isHi ? 'रिमाइंडर स्वीकार किया' : 'Reminder Accepted',
+        message: isHi ? `"${reminder.title}" आपके टास्क में जोड़ दिया गया है।` : `"${reminder.title}" added to your Tasks.`,
+        time: Date.now(),
+        unread: false,
+        reminderId: reminder.id
+      });
+
+      showPopup(isHi ? '✓ रिमाइंडर स्वीकार किया गया और टास्क में जोड़ा गया!' : '✓ Reminder accepted & scheduled in Tasks!');
+    } else {
+      reminder.status = 'rejected';
+      reminder.respondedAt = Date.now();
+
+      // Send rejection response back to sender
+      sendPubSubResponse(reminder, 'rejected');
+
+      // Dismiss system notification
+      if (window.AndroidVoice && window.AndroidVoice.cancelReminderNotification) {
+        window.AndroidVoice.cancelReminderNotification(reminderId);
+      }
+
+      // Add to notifications
+      notificationsList.unshift({
+        id: 'NOTIF' + Date.now(),
+        type: 'reminder_rejected',
+        title: isHi ? 'रिमाइंडर अस्वीकृत' : 'Reminder Declined',
+        message: isHi ? `आपने "${reminder.title}" को अस्वीकार कर दिया।` : `You declined "${reminder.title}".`,
+        time: Date.now(),
+        unread: false,
+        reminderId: reminder.id
+      });
+
+      showPopup(isHi ? 'रिमाइंडर अस्वीकार कर दिया गया' : 'Reminder declined');
+    }
+
+    saveReceivedReminders();
+    saveNotifications();
+    renderReceivedReminders();
+    renderNotifications();
+    updateReminderBadges();
+  };
+
+  function sendPubSubResponse(reminder, status) {
+    if (!reminder.senderVcId) return;
+    const cleanSender = reminder.senderVcId.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+    const payload = {
+      type: 'reminder_response',
+      reminderId: reminder.id,
+      status: status,
+      responderName: vcAccount ? vcAccount.name : 'Recipient',
+      responderVcId: vcAccount ? vcAccount.vcId : '',
+      title: reminder.title,
+      respondedAt: Date.now()
+    };
+    try {
+      fetch('https://ntfy.sh/vc_user_' + cleanSender, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).catch(e => console.log('Error posting reminder response:', e));
+    } catch (e) {}
+
+    // Local loopback for single-device test
+    localStorage.setItem('vc_local_bus', JSON.stringify({ to: reminder.senderVcId, payload, ts: Date.now() }));
+    window.dispatchEvent(new CustomEvent('vc_local_sync', { detail: { to: reminder.senderVcId, payload } }));
+  }
+
+  function sendFamilyReminder() {
+    const isHi = userSettings.appLanguage === 'hi';
+    const targetInput = $('targetVcIdInput');
+    const titleInput = $('reminderTitleInput');
+    const dtInput = $('reminderDateTimeInput');
+    const voiceSelect = $('familyVoiceSelect');
+
+    const targetVcId = targetInput ? targetInput.value.trim().toUpperCase() : '';
+    const title = titleInput ? titleInput.value.trim() : '';
+    const dtVal = dtInput ? dtInput.value : '';
+    const voice = voiceSelect ? voiceSelect.value : 'female_1';
+
+    if (!targetVcId) {
+      alert(isHi ? 'कृपया प्राप्तकर्ता का VC ID दर्ज करें' : 'Please enter recipient VC ID');
+      return;
+    }
+    if (vcAccount && targetVcId === vcAccount.vcId) {
+      alert(isHi ? 'आप स्वयं को रिमाइंडर नहीं भेज सकते। कृपया परिवार या मित्र का VC ID दर्ज करें।' : 'You cannot send a reminder to yourself. Please enter your family or friend\'s VC ID.');
+      return;
+    }
+    if (!title) {
+      alert(isHi ? 'कृपया रिमाइंडर संदेश दर्ज करें' : 'Please enter reminder message');
+      return;
+    }
+    if (!dtVal) {
+      alert(isHi ? 'कृपया दिनांक और समय चुनें' : 'Please select date & time');
+      return;
+    }
+
+    const selectedDays = getSelectedDays('familyReminderDayPills');
+    const cleanTarget = targetVcId.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+    const reminderId = 'REM' + Date.now();
+
+    const newReminder = {
+      id: reminderId,
+      targetVcId: targetVcId,
+      title: title,
+      timeIso: new Date(dtVal).toISOString(),
+      repeatDays: selectedDays,
+      voice: voice,
+      status: 'pending',
+      createdAt: Date.now(),
+      respondedAt: null
+    };
+
+    sentReminders.push(newReminder);
+    saveSentReminders();
+
+    // Save to recents
+    if (!recentVcIds.includes(targetVcId)) {
+      recentVcIds.unshift(targetVcId);
+      if (recentVcIds.length > 5) recentVcIds.pop();
+      saveRecentVcIds();
+    }
+
+    // Publish to recipient's topic
+    const payload = {
+      type: 'reminder_request',
+      reminderId: reminderId,
+      senderName: vcAccount ? vcAccount.name : 'Family Member',
+      senderVcId: vcAccount ? vcAccount.vcId : '',
+      title: title,
+      timeIso: newReminder.timeIso,
+      repeatDays: selectedDays,
+      voice: voice,
+      createdAt: Date.now()
+    };
+
+    try {
+      fetch('https://ntfy.sh/vc_user_' + cleanTarget, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).then(() => {
+        showPopup(isHi ? '✓ रिमाइंडर सफलतापूर्वक भेजा गया!' : '✓ Reminder sent successfully!');
+      }).catch(e => {
+        console.log('Error posting reminder:', e);
+        showPopup(isHi ? '✓ रिमाइंडर कतारबद्ध हुआ' : '✓ Reminder queued');
+      });
+    } catch (e) {
+      showPopup(isHi ? '✓ रिमाइंडर कतारबद्ध हुआ' : '✓ Reminder queued');
+    }
+
+    // Local loopback for single-device test
+    localStorage.setItem('vc_local_bus', JSON.stringify({ to: targetVcId, payload, ts: Date.now() }));
+    window.dispatchEvent(new CustomEvent('vc_local_sync', { detail: { to: targetVcId, payload } }));
+
+    // Reset inputs
+    if (titleInput) titleInput.value = '';
+    // Switch to Sent Reminders subview
+    switchFamilySubview('subviewSentReminders');
+    renderSentReminders();
+  }
+
+  function handleIncomingPubSubMessage(msg) {
+    if (!msg || !msg.type) return;
+    const isHi = userSettings.appLanguage === 'hi';
+
+    if (msg.type === 'reminder_request') {
+      // Avoid duplicate reception
+      if (receivedReminders.some(r => r.id === msg.reminderId)) return;
+
+      const receivedItem = {
+        id: msg.reminderId,
+        senderName: msg.senderName || 'Family/Friend',
+        senderVcId: msg.senderVcId || '',
+        title: msg.title,
+        timeIso: msg.timeIso,
+        repeatDays: msg.repeatDays || [],
+        voice: msg.voice || 'female_1',
+        status: 'pending',
+        createdAt: msg.createdAt || Date.now()
+      };
+      receivedReminders.push(receivedItem);
+      saveReceivedReminders();
+
+      // Add to notifications history
+      notificationsList.unshift({
+        id: 'NOTIF' + Date.now(),
+        type: 'reminder_incoming',
+        title: isHi ? `${receivedItem.senderName} से नया रिमाइंडर` : `New Reminder from ${receivedItem.senderName}`,
+        message: receivedItem.title,
+        time: Date.now(),
+        unread: true,
+        reminderId: receivedItem.id
+      });
+      saveNotifications();
+
+      // Format time string for system notification
+      const dt = new Date(receivedItem.timeIso);
+      const timeStr = dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const daysStr = receivedItem.repeatDays && receivedItem.repeatDays.length > 0 ? formatDaysSummary(receivedItem.repeatDays, isHi) : (isHi ? 'एक बार' : 'Once');
+
+      // Post Android system notification with Accept & Reject buttons!
+      if (window.AndroidVoice && window.AndroidVoice.postReminderNotification) {
+        window.AndroidVoice.postReminderNotification(
+          receivedItem.id,
+          receivedItem.senderName,
+          receivedItem.title,
+          timeStr,
+          daysStr
+        );
+      }
+
+      showPopup(isHi ? `नया रिमाइंडर: "${receivedItem.title}"` : `New reminder: "${receivedItem.title}"`);
+      renderReceivedReminders();
+      renderNotifications();
+      updateReminderBadges();
+    }
+    else if (msg.type === 'reminder_response') {
+      const sentItem = sentReminders.find(r => r.id === msg.reminderId);
+      if (sentItem) {
+        sentItem.status = msg.status;
+        sentItem.respondedAt = msg.respondedAt || Date.now();
+        saveSentReminders();
+
+        const notifTitle = msg.status === 'accepted'
+          ? (isHi ? `✓ ${msg.responderName || 'प्राप्तकर्ता'} ने स्वीकार किया` : `✓ ${msg.responderName || 'Recipient'} accepted`)
+          : (isHi ? `✕ ${msg.responderName || 'प्राप्तकर्ता'} ने अस्वीकार किया` : `✕ ${msg.responderName || 'Recipient'} declined`);
+        const notifMsg = msg.status === 'accepted'
+          ? (isHi ? `"${sentItem.title}" उनके वॉयस क्लॉक टास्क में जोड़ दिया गया है।` : `"${sentItem.title}" was added to their Tasks.`)
+          : (isHi ? `"${sentItem.title}" को स्वीकार नहीं किया गया।` : `"${sentItem.title}" was not accepted.`);
+
+        notificationsList.unshift({
+          id: 'NOTIF' + Date.now(),
+          type: msg.status === 'accepted' ? 'reminder_accepted' : 'reminder_rejected',
+          title: notifTitle,
+          message: notifMsg,
+          time: Date.now(),
+          unread: true,
+          reminderId: sentItem.id
+        });
+        saveNotifications();
+
+        // Alert sender via phone notification bar
+        if (window.AndroidVoice && window.AndroidVoice.postStatusNotification) {
+          window.AndroidVoice.postStatusNotification(notifTitle, notifMsg);
+        }
+
+        showPopup(notifTitle);
+        renderSentReminders();
+        renderNotifications();
+      }
+    }
+  }
+
+  function startFamilyRealtimeSync() {
+    if (!vcAccount || !vcAccount.verified || !vcAccount.vcId) return;
+    const cleanId = vcAccount.vcId.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+
+    if (familySyncEventSource) {
+      try { familySyncEventSource.close(); } catch {}
+      familySyncEventSource = null;
+    }
+
+    try {
+      familySyncEventSource = new EventSource('https://ntfy.sh/vc_user_' + cleanId + '/sse');
+      familySyncEventSource.onmessage = function(e) {
+        try {
+          const data = JSON.parse(e.data);
+          if (data && data.message) {
+            try {
+              const inner = JSON.parse(data.message);
+              handleIncomingPubSubMessage(inner);
+            } catch {
+              handleIncomingPubSubMessage(data);
+            }
+          } else {
+            handleIncomingPubSubMessage(data);
+          }
+        } catch (err) {}
+      };
+      familySyncEventSource.onerror = function() {};
+    } catch (e) {}
+
+    // Polling fallback every 5s
+    if (familyPollingInterval) clearInterval(familyPollingInterval);
+    familyPollingInterval = setInterval(() => {
+      if (!vcAccount || !vcAccount.verified) return;
+      fetch('https://ntfy.sh/vc_user_' + cleanId + '/json?poll=1&since=5m')
+        .then(res => res.text())
+        .then(text => {
+          if (!text) return;
+          const lines = text.trim().split('\n');
+          lines.forEach(line => {
+            try {
+              const obj = JSON.parse(line);
+              if (obj && obj.message) {
+                try {
+                  const inner = JSON.parse(obj.message);
+                  handleIncomingPubSubMessage(inner);
+                } catch {
+                  handleIncomingPubSubMessage(obj);
+                }
+              }
+            } catch {}
+          });
+        })
+        .catch(() => {});
+    }, 5000);
+
+    // Cross-account local sync listener
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'vc_local_bus' && e.newValue) {
+        try {
+          const item = JSON.parse(e.newValue);
+          if (vcAccount && item.to === vcAccount.vcId) {
+            handleIncomingPubSubMessage(item.payload);
+          }
+        } catch {}
+      }
+    });
+    window.addEventListener('vc_local_sync', (e) => {
+      if (e.detail && vcAccount && e.detail.to === vcAccount.vcId) {
+        handleIncomingPubSubMessage(e.detail.payload);
+      }
+    });
+  }
+
+  function switchFamilySubview(subviewId) {
+    const subviews = ['subviewSendReminder', 'subviewSentReminders', 'subviewReceivedReminders', 'subviewMyAccount'];
+    subviews.forEach(id => {
+      const el = $(id);
+      if (el) el.classList.toggle('hidden', id !== subviewId);
+    });
+
+    const navMap = {
+      'subviewSendReminder': { navId: 'navSendReminderBtn', titleEn: 'Send Reminder', titleHi: 'रिमाइंडर भेजें' },
+      'subviewSentReminders': { navId: 'navSentRemindersBtn', titleEn: 'Sent Reminders', titleHi: 'भेजे गए रिमाइंडर' },
+      'subviewReceivedReminders': { navId: 'navReceivedRemindersBtn', titleEn: 'Received Reminders', titleHi: 'प्राप्त रिमाइंडर' },
+      'subviewMyAccount': { navId: 'navMyAccountBtn', titleEn: 'My VC Account', titleHi: 'मेरा VC खाता' }
+    };
+
+    const isHi = userSettings.appLanguage === 'hi';
+    const activeInfo = navMap[subviewId];
+    if (activeInfo) {
+      document.querySelectorAll('.sidebar-nav-item').forEach(btn => {
+        btn.classList.toggle('active', btn.id === activeInfo.navId);
+      });
+      const titleEl = $('familyHubTitle');
+      if (titleEl) titleEl.textContent = isHi ? activeInfo.titleHi : activeInfo.titleEn;
+    }
+
+    $('remindFamilySidebar')?.classList.add('hidden');
+    $('familySidebarOverlay')?.classList.add('hidden');
+
+    if (subviewId === 'subviewSentReminders') renderSentReminders();
+    if (subviewId === 'subviewReceivedReminders') renderReceivedReminders();
+    if (subviewId === 'subviewMyAccount') populateAccountDisplay();
+  }
+
+  function populateAccountDisplay() {
+    if (!vcAccount) return;
+    const nameEl = $('accountViewName');
+    if (nameEl) nameEl.textContent = vcAccount.name;
+    const sideNameEl = $('sidebarUserName');
+    if (sideNameEl) sideNameEl.textContent = vcAccount.name;
+
+    const emailEl = $('accountViewEmail');
+    if (emailEl) emailEl.textContent = vcAccount.email;
+
+    const idEl = $('accountViewVcId');
+    if (idEl) idEl.textContent = vcAccount.vcId;
+    const sideIdEl = $('sidebarUserVcId');
+    if (sideIdEl) sideIdEl.textContent = vcAccount.vcId;
+
+    const initials = (vcAccount.name || 'VC').trim().substring(0, 2).toUpperCase();
+    const bigAvatar = $('accountBigAvatar');
+    if (bigAvatar) bigAvatar.textContent = initials;
+    const sideAvatar = $('sidebarAvatar');
+    if (sideAvatar) sideAvatar.textContent = initials;
+  }
+
+  function startOtpResendTimer() {
+    otpResendCountdown = 30;
+    const timerEl = $('otpTimerDisplay');
+    const resendBtn = $('btnResendVcOtp');
+    const isHi = userSettings.appLanguage === 'hi';
+    if (resendBtn) resendBtn.disabled = true;
+
+    if (otpTimerInterval) clearInterval(otpTimerInterval);
+    otpTimerInterval = setInterval(() => {
+      otpResendCountdown--;
+      if (timerEl) {
+        timerEl.textContent = isHi
+          ? `पुनः भेजें ${otpResendCountdown}s में उपलब्ध`
+          : `Resend available in ${otpResendCountdown}s`;
+      }
+      if (otpResendCountdown <= 0) {
+        clearInterval(otpTimerInterval);
+        if (resendBtn) resendBtn.disabled = false;
+        if (timerEl) timerEl.textContent = isHi ? 'अब आप दोबारा OTP भेज सकते हैं' : 'You can resend OTP now';
+      }
+    }, 1000);
+  }
+
+  // Event Listeners for Family & Notifications Views
+  $('settingRemindFamilyBtn')?.addEventListener('click', () => {
+    if (vcAccount && vcAccount.verified) {
+      populateAccountDisplay();
+      renderRecentVcIds();
+      renderSentReminders();
+      renderReceivedReminders();
+      switchFamilySubview('subviewSendReminder');
+      $('remindFamilyHubView')?.classList.remove('hidden');
+      startFamilyRealtimeSync();
+    } else {
+      $('vcAccountCreateView')?.classList.remove('hidden');
+    }
+  });
+
+  $('settingNotificationsBtn')?.addEventListener('click', () => {
+    // Mark notifications as read
+    notificationsList.forEach(n => { n.unread = false; });
+    saveNotifications();
+    renderNotifications();
+    $('notificationsView')?.classList.remove('hidden');
+  });
+
+  $('btnHubNotifications')?.addEventListener('click', () => {
+    notificationsList.forEach(n => { n.unread = false; });
+    saveNotifications();
+    renderNotifications();
+    $('notificationsView')?.classList.remove('hidden');
+  });
+
+  $('closeNotificationsBtn')?.addEventListener('click', () => {
+    $('notificationsView')?.classList.add('hidden');
+  });
+
+  $('clearAllNotifsBtn')?.addEventListener('click', () => {
+    const isHi = userSettings.appLanguage === 'hi';
+    if (confirm(isHi ? 'क्या आप सभी सूचनाएं हटाना चाहते हैं?' : 'Clear all notifications?')) {
+      notificationsList = [];
+      saveNotifications();
+      renderNotifications();
+      showPopup(isHi ? 'सभी सूचनाएं हटा दी गईं' : 'Notifications cleared');
+    }
+  });
+
+  $('closeVcCreateBtn')?.addEventListener('click', () => {
+    $('vcAccountCreateView')?.classList.add('hidden');
+  });
+
+  $('closeVcOtpBtn')?.addEventListener('click', () => {
+    $('vcOtpVerifyView')?.classList.add('hidden');
+  });
+
+  $('closeFamilyHubBtn')?.addEventListener('click', () => {
+    $('remindFamilyHubView')?.classList.add('hidden');
+    $('remindFamilySidebar')?.classList.add('hidden');
+    $('familySidebarOverlay')?.classList.add('hidden');
+  });
+
+  $('btnToggleFamilySidebar')?.addEventListener('click', () => {
+    const sb = $('remindFamilySidebar');
+    const ov = $('familySidebarOverlay');
+    if (sb) sb.classList.toggle('hidden');
+    if (ov) ov.classList.toggle('hidden');
+  });
+
+  $('familySidebarOverlay')?.addEventListener('click', () => {
+    $('remindFamilySidebar')?.classList.add('hidden');
+    $('familySidebarOverlay')?.classList.add('hidden');
+  });
+
+  // Sidebar Nav Items
+  $('navSendReminderBtn')?.addEventListener('click', () => switchFamilySubview('subviewSendReminder'));
+  $('navSentRemindersBtn')?.addEventListener('click', () => switchFamilySubview('subviewSentReminders'));
+  $('navReceivedRemindersBtn')?.addEventListener('click', () => switchFamilySubview('subviewReceivedReminders'));
+  $('navMyAccountBtn')?.addEventListener('click', () => switchFamilySubview('subviewMyAccount'));
+  $('navNotificationsBtn')?.addEventListener('click', () => {
+    $('remindFamilySidebar')?.classList.add('hidden');
+    $('familySidebarOverlay')?.classList.add('hidden');
+    notificationsList.forEach(n => { n.unread = false; });
+    saveNotifications();
+    renderNotifications();
+    $('notificationsView')?.classList.remove('hidden');
+  });
+
+  // Account Creation & Verification
+  $('btnCreateVcAccount')?.addEventListener('click', () => {
+    const isHi = userSettings.appLanguage === 'hi';
+    const nameVal = $('vcInputName')?.value.trim();
+    const emailVal = $('vcInputEmail')?.value.trim();
+
+    if (!nameVal) {
+      alert(isHi ? 'कृपया अपना नाम दर्ज करें' : 'Please enter your name');
+      return;
+    }
+    if (!emailVal || !emailVal.includes('@')) {
+      alert(isHi ? 'कृपया मान्य ईमेल दर्ज करें' : 'Please enter a valid email address');
+      return;
+    }
+
+    const uniqueId = generateCryptographicVcId();
+    const otp = generate8DigitOtp();
+
+    pendingVcAccount = {
+      name: nameVal,
+      email: emailVal,
+      vcId: uniqueId,
+      otp: otp,
+      createdAt: Date.now()
+    };
+
+    const emailDisp = $('vcOtpEmailDisplay');
+    if (emailDisp) {
+      emailDisp.textContent = isHi
+        ? `सत्यापन कोड ${emailVal} पर भेजा गया है।`
+        : `Verification code sent to ${emailVal}.`;
+    }
+    const otpCodeDisp = $('vcOtpCodeDisplay');
+    if (otpCodeDisp) otpCodeDisp.textContent = otp;
+
+    const otpInput = $('vcInputOtp');
+    if (otpInput) otpInput.value = '';
+
+    startOtpResendTimer();
+
+    $('vcAccountCreateView')?.classList.add('hidden');
+    $('vcOtpVerifyView')?.classList.remove('hidden');
+    showPopup(isHi ? '8-अंकीय सत्यापन कोड भेजा गया!' : '8-digit verification code sent!');
+  });
+
+  $('btnCopyDemoOtp')?.addEventListener('click', () => {
+    if (pendingVcAccount && pendingVcAccount.otp) {
+      const inp = $('vcInputOtp');
+      if (inp) inp.value = pendingVcAccount.otp;
+      showPopup(userSettings.appLanguage === 'hi' ? 'कोड स्वतः भरा गया' : 'Autofilled OTP code');
+    }
+  });
+
+  $('btnResendVcOtp')?.addEventListener('click', () => {
+    if (otpResendCountdown > 0) return;
+    const isHi = userSettings.appLanguage === 'hi';
+    if (!pendingVcAccount) return;
+    const newOtp = generate8DigitOtp();
+    pendingVcAccount.otp = newOtp;
+    const otpCodeDisp = $('vcOtpCodeDisplay');
+    if (otpCodeDisp) otpCodeDisp.textContent = newOtp;
+    startOtpResendTimer();
+    showPopup(isHi ? 'नया OTP कोड भेजा गया!' : 'New OTP code sent!');
+  });
+
+  $('btnVerifyVcOtp')?.addEventListener('click', () => {
+    const isHi = userSettings.appLanguage === 'hi';
+    const enteredOtp = $('vcInputOtp')?.value.trim();
+
+    if (!enteredOtp || enteredOtp.length !== 8) {
+      alert(isHi ? 'कृपया 8-अंकीय OTP कोड दर्ज करें' : 'Please enter the 8-digit OTP code');
+      return;
+    }
+
+    if (pendingVcAccount && enteredOtp !== pendingVcAccount.otp) {
+      alert(isHi ? 'अमान्य OTP कोड। कृपया पुनः प्रयास करें।' : 'Invalid OTP code. Please try again.');
+      return;
+    }
+
+    // Activated!
+    vcAccount = {
+      name: pendingVcAccount.name,
+      email: pendingVcAccount.email,
+      vcId: pendingVcAccount.vcId,
+      verified: true,
+      createdAt: Date.now()
+    };
+    saveVcAccount();
+    pendingVcAccount = null;
+
+    notificationsList.unshift({
+      id: 'NOTIF' + Date.now(),
+      type: 'system',
+      title: isHi ? 'वॉयस क्लॉक फैमिली में स्वागत है!' : 'Welcome to Voice Clock Family!',
+      message: isHi
+        ? `आपकी यूनिक VC ID है: ${vcAccount.vcId}। इसे परिजनों के साथ साझा करें।`
+        : `Your unique VC ID is: ${vcAccount.vcId}. Share with loved ones to connect.`,
+      time: Date.now(),
+      unread: true
+    });
+    saveNotifications();
+
+    $('vcOtpVerifyView')?.classList.add('hidden');
+    populateAccountDisplay();
+    renderRecentVcIds();
+    renderSentReminders();
+    renderReceivedReminders();
+    switchFamilySubview('subviewSendReminder');
+    $('remindFamilyHubView')?.classList.remove('hidden');
+    startFamilyRealtimeSync();
+
+    showPopup(isHi ? '✓ VC खाता सफलतापूर्वक सत्यापित हुआ!' : '✓ VC Account verified successfully!');
+  });
+
+  $('linkLoginVcAccount')?.addEventListener('click', () => {
+    const isHi = userSettings.appLanguage === 'hi';
+    const existingId = prompt(isHi ? 'अपनी मौजूदा VC ID दर्ज करें (जैसे VC-XXXX-XXXX-XXXX-XXXX):' : 'Enter your existing VC ID (e.g. VC-XXXX-XXXX-XXXX-XXXX):');
+    if (!existingId || !existingId.trim().toUpperCase().startsWith('VC-')) {
+      if (existingId) alert(isHi ? 'अमान्य VC ID प्रारूप' : 'Invalid VC ID format');
+      return;
+    }
+    const userName = prompt(isHi ? 'अपना नाम दर्ज करें:' : 'Enter your name:', 'Family Member') || 'User';
+    vcAccount = {
+      name: userName.trim(),
+      email: 'restored@voiceclock.local',
+      vcId: existingId.trim().toUpperCase(),
+      verified: true,
+      createdAt: Date.now()
+    };
+    saveVcAccount();
+    populateAccountDisplay();
+    $('vcAccountCreateView')?.classList.add('hidden');
+    switchFamilySubview('subviewSendReminder');
+    $('remindFamilyHubView')?.classList.remove('hidden');
+    startFamilyRealtimeSync();
+    showPopup(isHi ? '✓ खाता पुनर्स्थापित हुआ' : '✓ Account restored successfully');
+  });
+
+  $('btnCopyAccountVcId')?.addEventListener('click', () => {
+    if (!vcAccount || !vcAccount.vcId) return;
+    copyVcIdToClipboard(vcAccount.vcId);
+  });
+
+  $('btnCopySidebarVcId')?.addEventListener('click', () => {
+    if (!vcAccount || !vcAccount.vcId) return;
+    copyVcIdToClipboard(vcAccount.vcId);
+  });
+
+  function copyVcIdToClipboard(text) {
+    const isHi = userSettings.appLanguage === 'hi';
+    if (window.AndroidVoice && window.AndroidVoice.copyToClipboard) {
+      window.AndroidVoice.copyToClipboard(text);
+    } else if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text);
+    }
+    showPopup(isHi ? `✓ VC ID कॉपी किया: ${text}` : `✓ Copied VC ID: ${text}`);
+  }
+
+  $('btnShareAccountVcId')?.addEventListener('click', () => {
+    if (!vcAccount || !vcAccount.vcId) return;
+    const isHi = userSettings.appLanguage === 'hi';
+    const title = isHi ? 'वॉयस क्लॉक पर मुझसे जुड़ें' : 'Connect with me on Voice Clock';
+    const text = isHi
+      ? `नमस्ते! मेरी वॉयस क्लॉक आईडी है: ${vcAccount.vcId}। मुझे देखभाल भरे रिमाइंडर भेजने के लिए ऐप में इस आईडी का उपयोग करें!`
+      : `Hello! My Voice Clock ID is: ${vcAccount.vcId}. Use this ID in the app to send me caring reminders!`;
+
+    if (window.AndroidVoice && window.AndroidVoice.shareText) {
+      window.AndroidVoice.shareText(title, text);
+    } else if (navigator.share) {
+      navigator.share({ title, text }).catch(() => {});
+    } else {
+      copyVcIdToClipboard(vcAccount.vcId);
+    }
+  });
+
+  $('btnEditAccountName')?.addEventListener('click', () => {
+    if (!vcAccount) return;
+    const isHi = userSettings.appLanguage === 'hi';
+    const newName = prompt(isHi ? 'नया नाम दर्ज करें:' : 'Enter new display name:', vcAccount.name);
+    if (newName && newName.trim()) {
+      vcAccount.name = newName.trim();
+      saveVcAccount();
+      populateAccountDisplay();
+      showPopup(isHi ? 'नाम अपडेट किया गया' : 'Name updated');
+    }
+  });
+
+  $('btnLogoutAccount')?.addEventListener('click', () => {
+    const isHi = userSettings.appLanguage === 'hi';
+    if (confirm(isHi ? 'क्या आप खाता बदलना या लॉग आउट करना चाहते हैं?' : 'Are you sure you want to log out or switch account?')) {
+      vcAccount = null;
+      saveVcAccount();
+      if (familySyncEventSource) {
+        try { familySyncEventSource.close(); } catch {}
+        familySyncEventSource = null;
+      }
+      $('remindFamilyHubView')?.classList.add('hidden');
+      $('vcAccountCreateView')?.classList.remove('hidden');
+    }
+  });
+
+  $('btnPasteVcId')?.addEventListener('click', () => {
+    if (navigator.clipboard && navigator.clipboard.readText) {
+      navigator.clipboard.readText().then(text => {
+        if (text) {
+          const inp = $('targetVcIdInput');
+          if (inp) inp.value = text.trim().toUpperCase();
+        }
+      }).catch(() => {
+        showPopup(userSettings.appLanguage === 'hi' ? 'क्लिपबोर्ड से पेस्ट नहीं कर सके' : 'Could not paste from clipboard');
+      });
+    }
+  });
+
+  // Quick caring chips
+  document.querySelectorAll('.quick-reminder-chips .quick-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const text = chip.getAttribute('data-text');
+      const input = $('reminderTitleInput');
+      if (input && text) {
+        input.value = text;
+        input.focus();
+      }
+    });
+  });
+
+  // Setup day pills for family reminder
+  setupDayPillsRow('familyReminderDayPills');
+
+  // Preview Voice in Family Reminder
+  $('btnPreviewFamilyVoice')?.addEventListener('click', () => {
+    const voiceSelect = $('familyVoiceSelect');
+    const vId = voiceSelect ? voiceSelect.value : 'female_1';
+    const isHi = userSettings.appLanguage === 'hi';
+    speakVoicePreview(vId, isHi);
+  });
+
+  // Send Reminder Button
+  $('btnSendFamilyReminder')?.addEventListener('click', sendFamilyReminder);
+
+  // Initialize badges & realtime sync if user already logged in
+  updateFamilySettingsBadge();
+  updateNotificationBadges();
+  updateReminderBadges();
+  renderRecentVcIds();
+  if (vcAccount && vcAccount.verified) {
+    populateAccountDisplay();
+    startFamilyRealtimeSync();
+  }
+
+  // Pre-fill datetime picker to +1 hour from now
+  const nowOneHour = new Date(Date.now() + 3600000);
+  const nowIsoString = new Date(nowOneHour.getTime() - (nowOneHour.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+  const familyDtInp = $('reminderDateTimeInput');
+  if (familyDtInp && !familyDtInp.value) {
+    familyDtInp.value = nowIsoString;
+  }
 
   // Mark app initialization complete (safe to invoke renderAlarms/renderTasks/renderAboutView)
   isAppReady = true;

@@ -38,6 +38,7 @@ public class MainActivity extends BridgeActivity {
     private WebView webView;
     private BroadcastReceiver voiceReceiver;
     private BroadcastReceiver screenOffReceiver;
+    private BroadcastReceiver reminderReceiver;
     private Vibrator vibrator;
     private boolean isAlarmRinging = false;
     private SpeechRecognizer activeSpeechRecognizer;
@@ -84,6 +85,44 @@ public class MainActivity extends BridgeActivity {
             registerReceiver(voiceReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
         } else {
             registerReceiver(voiceReceiver, filter);
+        }
+
+        // Register receiver for real-time notification bar actions (Accept / Reject)
+        reminderReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (intent == null) return;
+                String action = intent.getAction();
+                String reminderId = intent.getStringExtra("reminderId");
+                int notifId = intent.getIntExtra("notifId", 0);
+
+                if (notifId != 0) {
+                    try {
+                        android.app.NotificationManager nm = (android.app.NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+                        if (nm != null) nm.cancel(notifId);
+                    } catch (Exception ignored) {}
+                }
+
+                if ("com.voiceclock.vc.ACTION_REMINDER_ACCEPT".equals(action)) {
+                    if (webView != null) {
+                        String clean = (reminderId != null) ? reminderId.replace("'", "\\'") : "";
+                        webView.post(() -> webView.evaluateJavascript("window.handleRemoteReminderAction && window.handleRemoteReminderAction('" + clean + "', 'accept')", null));
+                    }
+                } else if ("com.voiceclock.vc.ACTION_REMINDER_REJECT".equals(action)) {
+                    if (webView != null) {
+                        String clean = (reminderId != null) ? reminderId.replace("'", "\\'") : "";
+                        webView.post(() -> webView.evaluateJavascript("window.handleRemoteReminderAction && window.handleRemoteReminderAction('" + clean + "', 'reject')", null));
+                    }
+                }
+            }
+        };
+        IntentFilter remFilter = new IntentFilter();
+        remFilter.addAction("com.voiceclock.vc.ACTION_REMINDER_ACCEPT");
+        remFilter.addAction("com.voiceclock.vc.ACTION_REMINDER_REJECT");
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(reminderReceiver, remFilter, Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(reminderReceiver, remFilter);
         }
 
         vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
@@ -590,6 +629,55 @@ public class MainActivity extends BridgeActivity {
                 });
             }
 
+            @JavascriptInterface
+            public void postReminderNotification(String reminderId, String senderName, String title, String timeStr, String daysStr) {
+                showFamilyReminderNotification(reminderId, senderName, title, timeStr, daysStr);
+            }
+
+            @JavascriptInterface
+            public void postStatusNotification(String title, String message) {
+                showStatusNotification(title, message);
+            }
+
+            @JavascriptInterface
+            public void cancelReminderNotification(String reminderId) {
+                if (reminderId == null) return;
+                try {
+                    android.app.NotificationManager nm = (android.app.NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+                    if (nm != null) {
+                        nm.cancel(Math.abs(reminderId.hashCode()));
+                    }
+                } catch (Exception ignored) {}
+            }
+
+            @JavascriptInterface
+            public void copyToClipboard(String text) {
+                if (text == null) return;
+                runOnUiThread(() -> {
+                    try {
+                        android.content.ClipboardManager cm = (android.content.ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+                        if (cm != null) {
+                            android.content.ClipData clip = android.content.ClipData.newPlainText("Voice Clock", text);
+                            cm.setPrimaryClip(clip);
+                        }
+                    } catch (Exception ignored) {}
+                });
+            }
+
+            @JavascriptInterface
+            public void shareText(String title, String text) {
+                if (text == null) return;
+                runOnUiThread(() -> {
+                    try {
+                        Intent share = new Intent(Intent.ACTION_SEND);
+                        share.setType("text/plain");
+                        share.putExtra(Intent.EXTRA_SUBJECT, title != null ? title : "Voice Clock");
+                        share.putExtra(Intent.EXTRA_TEXT, text);
+                        startActivity(Intent.createChooser(share, title != null ? title : "Share"));
+                    } catch (Exception ignored) {}
+                });
+            }
+
         }, "AndroidVoice");
     }
 
@@ -812,6 +900,133 @@ public class MainActivity extends BridgeActivity {
         return false;
     }
 
+    private void showFamilyReminderNotification(String reminderId, String senderName, String title, String timeStr, String daysStr) {
+        runOnUiThread(() -> {
+            try {
+                android.app.NotificationManager nm = (android.app.NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+                if (nm == null) return;
+
+                String channelId = "vc_family_reminders_channel";
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    android.app.NotificationChannel channel = new android.app.NotificationChannel(
+                            channelId,
+                            "Family & Friends Reminders",
+                            android.app.NotificationManager.IMPORTANCE_HIGH
+                    );
+                    channel.setDescription("Incoming reminders from family and friends with instant Accept/Reject actions");
+                    channel.enableVibration(true);
+                    channel.setLockscreenVisibility(android.app.Notification.VISIBILITY_PUBLIC);
+                    nm.createNotificationChannel(channel);
+                }
+
+                int notifId = (reminderId != null) ? Math.abs(reminderId.hashCode()) : 2001;
+
+                // Accept Intent
+                Intent acceptIntent = new Intent("com.voiceclock.vc.ACTION_REMINDER_ACCEPT");
+                acceptIntent.setPackage(getPackageName());
+                acceptIntent.putExtra("reminderId", reminderId);
+                acceptIntent.putExtra("notifId", notifId);
+                PendingIntent acceptPi = PendingIntent.getBroadcast(
+                        this,
+                        notifId * 2 + 1,
+                        acceptIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0)
+                );
+
+                // Reject Intent
+                Intent rejectIntent = new Intent("com.voiceclock.vc.ACTION_REMINDER_REJECT");
+                rejectIntent.setPackage(getPackageName());
+                rejectIntent.putExtra("reminderId", reminderId);
+                rejectIntent.putExtra("notifId", notifId);
+                PendingIntent rejectPi = PendingIntent.getBroadcast(
+                        this,
+                        notifId * 2 + 2,
+                        rejectIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0)
+                );
+
+                // Content Intent (opens app)
+                Intent openIntent = new Intent(this, MainActivity.class);
+                openIntent.setAction("com.voiceclock.vc.OPEN_NOTIFICATIONS");
+                openIntent.putExtra("reminderId", reminderId);
+                openIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                PendingIntent openPi = PendingIntent.getActivity(
+                        this,
+                        notifId,
+                        openIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0)
+                );
+
+                String content = (title != null ? title : "Reminder") + " (" + (timeStr != null ? timeStr : "") + ")";
+                if (daysStr != null && !daysStr.trim().isEmpty()) {
+                    content += " • " + daysStr;
+                }
+
+                androidx.core.app.NotificationCompat.Builder builder =
+                        new androidx.core.app.NotificationCompat.Builder(this, channelId)
+                                .setSmallIcon(R.mipmap.ic_launcher)
+                                .setContentTitle("❤️ Family Reminder: " + (senderName != null ? senderName : "Loved One"))
+                                .setContentText(content)
+                                .setStyle(new androidx.core.app.NotificationCompat.BigTextStyle().bigText(
+                                        "From: " + (senderName != null ? senderName : "Family") + "\nTask: " + title + "\nTime: " + timeStr + (daysStr != null && !daysStr.isEmpty() ? "\nRepeat: " + daysStr : "")
+                                ))
+                                .setPriority(androidx.core.app.NotificationCompat.PRIORITY_HIGH)
+                                .setCategory(androidx.core.app.NotificationCompat.CATEGORY_REMINDER)
+                                .setAutoCancel(true)
+                                .setContentIntent(openPi)
+                                .addAction(android.R.drawable.checkbox_on_background, "Accept ✅", acceptPi)
+                                .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Reject ❌", rejectPi);
+
+                nm.notify(notifId, builder.build());
+            } catch (Exception e) {
+                android.util.Log.e("VOICE_CLOCK", "Failed to show family reminder notification", e);
+            }
+        });
+    }
+
+    private void showStatusNotification(String title, String message) {
+        runOnUiThread(() -> {
+            try {
+                android.app.NotificationManager nm = (android.app.NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+                if (nm == null) return;
+
+                String channelId = "vc_family_reminders_channel";
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    android.app.NotificationChannel channel = new android.app.NotificationChannel(
+                            channelId,
+                            "Family & Friends Reminders",
+                            android.app.NotificationManager.IMPORTANCE_DEFAULT
+                    );
+                    nm.createNotificationChannel(channel);
+                }
+
+                int notifId = (int) (System.currentTimeMillis() % 100000);
+                Intent openIntent = new Intent(this, MainActivity.class);
+                openIntent.setAction("com.voiceclock.vc.OPEN_NOTIFICATIONS");
+                openIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                PendingIntent openPi = PendingIntent.getActivity(
+                        this,
+                        notifId,
+                        openIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0)
+                );
+
+                androidx.core.app.NotificationCompat.Builder builder =
+                        new androidx.core.app.NotificationCompat.Builder(this, channelId)
+                                .setSmallIcon(R.mipmap.ic_launcher)
+                                .setContentTitle(title != null ? title : "Voice Clock Update")
+                                .setContentText(message != null ? message : "")
+                                .setStyle(new androidx.core.app.NotificationCompat.BigTextStyle().bigText(message))
+                                .setAutoCancel(true)
+                                .setContentIntent(openPi);
+
+                nm.notify(notifId, builder.build());
+            } catch (Exception e) {
+                android.util.Log.e("VOICE_CLOCK", "Failed to show status notification", e);
+            }
+        });
+    }
+
     @Override
     public void onDestroy() {
         stopAlarmVibration();
@@ -825,6 +1040,11 @@ public class MainActivity extends BridgeActivity {
         if (screenOffReceiver != null) {
             try {
                 unregisterReceiver(screenOffReceiver);
+            } catch (Exception ignored) {}
+        }
+        if (reminderReceiver != null) {
+            try {
+                unregisterReceiver(reminderReceiver);
             } catch (Exception ignored) {}
         }
         if (activeSpeechRecognizer != null) {
