@@ -18,6 +18,7 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.VIBRATE"/>
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
 
     <application
         android:allowBackup="true"
@@ -51,8 +52,8 @@
             android:turnScreenOn="true"
             android:showOnLockScreen="true"
             android:inheritShowWhenLocked="true"
-            android:launchMode="singleTask"
-            android:taskAffinity=""
+            android:launchMode="singleInstance"
+            android:taskAffinity="com.voiceclock.vc.alarm"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar"/>
 

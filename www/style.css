@@ -800,6 +800,21 @@ body.light .setting-item {
   cursor: pointer;
   width: auto;
   min-width: 240px;
+  transition: all 0.25s ease;
+}
+
+.google-mic-btn.active-listening {
+  background: rgba(52, 168, 83, 0.15) !important;
+  border-color: #34a853 !important;
+  color: #34a853 !important;
+  box-shadow: 0 0 16px rgba(52, 168, 83, 0.45);
+  animation: pulse-voice-glow 2s infinite ease-in-out;
+}
+
+@keyframes pulse-voice-glow {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(52, 168, 83, 0.5); }
+  50% { transform: scale(1.02); box-shadow: 0 0 0 10px rgba(52, 168, 83, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(52, 168, 83, 0); }
 }
 
 .google-colors-bar {
@@ -2849,47 +2864,152 @@ body.light .new-ver-row {
   padding: 4px;
 }
 
-.vc-otp-demo-card {
+.vc-otp-status-card {
   background: rgba(56, 189, 248, 0.08);
-  border: 1px dashed rgba(56, 189, 248, 0.35);
+  border: 1px solid rgba(56, 189, 248, 0.25);
   border-radius: 12px;
   padding: 12px 14px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 12px;
   margin-bottom: 16px;
 }
 
-.otp-hint-badge {
-  font-size: 10px;
+body.light .vc-otp-status-card {
+  background: rgba(2, 132, 199, 0.08);
+  border-color: rgba(2, 132, 199, 0.25);
+}
+
+.otp-status-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(56, 189, 248, 0.15);
+}
+
+.otp-status-text-wrap {
+  flex: 1;
+}
+
+.otp-status-heading {
+  font-size: 13px;
   font-weight: 700;
   color: #38bdf8;
-  background: rgba(56, 189, 248, 0.18);
-  padding: 2px 6px;
-  border-radius: 6px;
+  margin-bottom: 2px;
 }
 
-.otp-hint-code {
-  font-family: monospace;
-  font-size: 18px;
-  font-weight: 700;
-  color: #ffffff;
-  letter-spacing: 2px;
+body.light .otp-status-heading {
+  color: #0284c7;
 }
 
-body.light .otp-hint-code {
-  color: #0369a1;
-}
-
-.btn-copy-otp {
-  background: #0284c7;
-  color: #ffffff;
-  border: none;
-  border-radius: 8px;
-  padding: 6px 10px;
+.otp-status-desc {
   font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.email-config-link {
+  font-size: 12px !important;
+  color: #94a3b8 !important;
+  text-decoration: none !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px !important;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.2s ease;
+}
+
+.email-config-link:hover {
+  color: #38bdf8 !important;
+  background: rgba(56, 189, 248, 0.08);
+  border-color: rgba(56, 189, 248, 0.25);
+}
+
+.email-config-modal-card {
+  max-width: 440px;
+  width: 90%;
+  margin: auto;
+  border-radius: 20px;
+  padding: 20px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.email-config-intro-card {
+  background: rgba(56, 189, 248, 0.06);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.email-config-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.15);
+  padding: 3px 8px;
+  border-radius: 6px;
+  margin-bottom: 6px;
+}
+
+.email-config-intro-p {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.45;
+  margin: 0 0 8px 0;
+}
+
+.email-config-help-link {
+  font-size: 12px;
+  color: #38bdf8;
+  text-decoration: underline;
+  display: inline-block;
+  font-weight: 500;
+}
+
+.email-config-status-msg {
+  font-size: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin-top: 10px;
+  line-height: 1.4;
+}
+
+.email-config-status-msg.success {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.email-config-status-msg.error {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.spinner-inline {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin-inline 0.8s linear infinite;
+  vertical-align: middle;
+  margin-right: 6px;
+}
+
+@keyframes spin-inline {
+  to { transform: rotate(360deg); }
 }
 
 .otp-timer-sub {
@@ -3647,4 +3767,36 @@ body.light .vc-id-big-value {
   padding: 40px 20px;
   color: var(--muted);
   font-size: 13px;
+}
+
+.owner-secret-tap {
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: pointer;
+  display: inline-block;
+}
+
+.trusted-vc-card {
+  border-left: 3px solid #10b981;
+}
+
+.btn-trust-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-trust-inline:active {
+  transform: scale(0.95);
+  background: rgba(16, 185, 129, 0.25);
 }

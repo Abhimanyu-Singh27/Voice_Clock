@@ -7,7 +7,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -17,58 +17,60 @@ import android.os.PowerManager;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
-import android.speech.tts.TextToSpeech;
 import android.util.Log;
 import androidx.core.app.NotificationCompat;
+import androidx.core.content.ContextCompat;
 import java.util.ArrayList;
 import java.util.Locale;
 
 /**
- * 100% On-Device, Private Foreground Service for Voice Clock Assistant.
- * Keeps listening for 'Hey VC' hotword locally.
- * Zero network transmission, zero audio recording to disk.
+ * Continuous Foreground Service for Voice Clock Assistant.
+ * Listens continuously and silently without default start/stop beeps.
+ * Runs in background while the app is active/minimized.
+ * Automatically stops when the app task is removed from tab history / recents.
  */
 public class VoiceAssistantService extends Service {
 
-    private static final String CHANNEL_ID = "voice_assistant_channel_v2";
+    private static final String CHANNEL_ID = "voice_assistant_channel_v3";
     private static final int NOTIF_ID = 2002;
     private static final String TAG = "VOICE_ASSISTANT_SVC";
 
+    public static volatile VoiceAssistantService activeService = null;
+
     private SpeechRecognizer speechRecognizer;
-    private TextToSpeech textToSpeech;
+    private SilentSpeechAudioHelper audioHelper;
     private PowerManager.WakeLock wakeLock;
-    private boolean shouldRun = true;
+    private volatile boolean shouldRun = false;
+    private volatile boolean isTtsSpeaking = false;
     private Handler mainHandler;
     private final Runnable restartRunnable = this::startListeningLoop;
+    private String currentVoiceLanguage = "bilingual";
 
-    private final android.content.BroadcastReceiver screenReceiver = new android.content.BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (Intent.ACTION_SCREEN_OFF.equals(intent.getAction())) {
-                Log.d(TAG, "Screen turned off. Stopping voice assistant service.");
-                stopSelf();
-            }
-        }
-    };
+    public static boolean isRunning() {
+        return activeService != null && activeService.shouldRun;
+    }
 
     @Override
     public void onCreate() {
         super.onCreate();
+        activeService = this;
         mainHandler = new Handler(Looper.getMainLooper());
+        audioHelper = SilentSpeechAudioHelper.getInstance(this);
         createNotificationChannel();
-        initTTS();
-
-        IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_OFF);
-        registerReceiver(screenReceiver, filter);
+        acquireCpuWakeLock();
     }
 
     private void acquireCpuWakeLock() {
         PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
         if (pm != null) {
             try {
-                wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "VoiceClock:VoiceAssistantCpuWake");
-                wakeLock.setReferenceCounted(false);
-                wakeLock.acquire();
+                if (wakeLock == null) {
+                    wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "VoiceClock:VoiceAssistantCpuWake");
+                    wakeLock.setReferenceCounted(false);
+                }
+                if (!wakeLock.isHeld()) {
+                    wakeLock.acquire();
+                }
             } catch (Exception e) {
                 Log.w(TAG, "Could not acquire CPU wake lock", e);
             }
@@ -93,29 +95,21 @@ public class VoiceAssistantService extends Service {
                                 | PowerManager.ON_AFTER_RELEASE,
                         "VoiceClock:VoiceWakeScreen"
                 );
-                screenLock.acquire(10000);
+                screenLock.acquire(8000);
             } catch (Exception e) {
                 Log.w(TAG, "Screen wake failed", e);
             }
         }
     }
 
-    private void initTTS() {
-        textToSpeech = new TextToSpeech(this, status -> {
-            if (status == TextToSpeech.SUCCESS && textToSpeech != null) {
-                textToSpeech.setLanguage(new Locale("hi", "IN"));
-            }
-        });
-    }
-
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
                     CHANNEL_ID,
-                    "VOICE Clock Assistant (Always Listening)",
+                    "VOICE Clock Continuous Assistant",
                     NotificationManager.IMPORTANCE_LOW
             );
-            channel.setDescription("Background hotword detection for 'Hey VC' (100% on-device and private)");
+            channel.setDescription("Continuous background listening for voice commands (100% on-device & private)");
             channel.setShowBadge(false);
             NotificationManager nm = getSystemService(NotificationManager.class);
             if (nm != null) nm.createNotificationChannel(channel);
@@ -126,12 +120,20 @@ public class VoiceAssistantService extends Service {
         Intent appIntent = new Intent(this, MainActivity.class);
         PendingIntent pi = PendingIntent.getActivity(
                 this, 0, appIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+                PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0)
+        );
+
+        Intent stopIntent = new Intent(this, VoiceAssistantService.class);
+        stopIntent.setAction("STOP");
+        PendingIntent stopPi = PendingIntent.getService(
+                this, 1, stopIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0)
         );
 
         boolean isHi = "hi".equalsIgnoreCase(AlarmPreferences.getAppLanguage(this));
-        String title = isHi ? "वॉयस क्लॉक सहायक" : "VOICE Clock Assistant";
-        String content = isHi ? "वॉयस निर्देश के लिए तैयार • 100% सुरक्षित और ऑन-डिवाइस" : "Listening for 'Hey VC' • 100% Private & On-Device";
+        String title = isHi ? "वॉयस क्लॉक सहायक सक्रिय है" : "VOICE Clock Assistant Active";
+        String content = isHi ? "लगातार सुन रहा है • निर्देश बोलें (100% सुरक्षित)" : "Listening continuously • Speak any command (100% Private)";
+        String stopLabel = isHi ? "बंद करें" : "Stop";
 
         return new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(android.R.drawable.ic_btn_speak_now)
@@ -140,66 +142,120 @@ public class VoiceAssistantService extends Service {
                 .setContentIntent(pi)
                 .setOngoing(true)
                 .setPriority(NotificationCompat.PRIORITY_LOW)
+                .addAction(android.R.drawable.ic_menu_close_clear_cancel, stopLabel, stopPi)
                 .build();
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent != null && "STOP".equals(intent.getAction())) {
+            stopListeningAndCleanup();
             stopSelf();
             return START_NOT_STICKY;
         }
 
-        PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-        if (pm != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH && !pm.isInteractive()) {
-            stopSelf();
-            return START_NOT_STICKY;
+        if (intent != null && intent.hasExtra("lang")) {
+            String l = intent.getStringExtra("lang");
+            if (l != null && !l.trim().isEmpty()) {
+                currentVoiceLanguage = l;
+            }
         }
 
         startForeground(NOTIF_ID, createNotification());
         shouldRun = true;
-        scheduleRestart(500);
+        activeService = this;
 
+        if (MainActivity.activeInstance != null) {
+            MainActivity.activeInstance.runOnUiThread(() -> MainActivity.activeInstance.onVoiceServiceStarted());
+        }
+
+        scheduleRestart(200);
         return START_STICKY;
     }
 
     private void scheduleRestart(long delayMs) {
-        if (!shouldRun) return;
+        if (!shouldRun || isTtsSpeaking) return;
         mainHandler.removeCallbacks(restartRunnable);
-        mainHandler.postDelayed(restartRunnable, delayMs);
+        mainHandler.postDelayed(restartRunnable, Math.max(100, delayMs));
     }
 
     private void startListeningLoop() {
-        if (!shouldRun) return;
+        if (!shouldRun || isTtsSpeaking) return;
+
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            Log.w(TAG, "Audio record permission not granted, pausing loop");
+            return;
+        }
+
+        if (!SpeechRecognizer.isRecognitionAvailable(this)) {
+            Log.w(TAG, "SpeechRecognizer not available on device");
+            scheduleRestart(4000);
+            return;
+        }
 
         mainHandler.post(() -> {
+            if (!shouldRun || isTtsSpeaking) return;
+
             try {
-                if (speechRecognizer != null) {
-                    try {
-                        speechRecognizer.cancel();
-                        speechRecognizer.destroy();
-                    } catch (Exception ignored) {}
-                    speechRecognizer = null;
+                if (speechRecognizer == null) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && SpeechRecognizer.isOnDeviceRecognitionAvailable(VoiceAssistantService.this)) {
+                        try {
+                            speechRecognizer = SpeechRecognizer.createOnDeviceSpeechRecognizer(VoiceAssistantService.this);
+                        } catch (Exception e) {
+                            speechRecognizer = SpeechRecognizer.createSpeechRecognizer(VoiceAssistantService.this);
+                        }
+                    } else {
+                        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(VoiceAssistantService.this);
+                    }
                 }
 
-                if (!SpeechRecognizer.isRecognitionAvailable(this)) {
-                    Log.w(TAG, "SpeechRecognizer not available on device");
-                    scheduleRestart(5000);
-                    return;
-                }
-
-                speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this);
                 Intent recognizerIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
                 recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
                 recognizerIntent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
-                recognizerIntent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3);
+                recognizerIntent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5);
+                recognizerIntent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 10000L);
+                recognizerIntent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 10000L);
+                recognizerIntent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 8000L);
+                recognizerIntent.putExtra("android.speech.extra.DICTATION_MODE", true);
+
+                String primaryLang = "hi-IN";
+                if ("en-US".equalsIgnoreCase(currentVoiceLanguage)) {
+                    primaryLang = "en-US";
+                    recognizerIntent.putExtra("android.speech.extra.EXTRA_ADDITIONAL_LANGUAGES", new String[]{"hi-IN", "en-IN"});
+                } else if ("en-IN".equalsIgnoreCase(currentVoiceLanguage)) {
+                    primaryLang = "en-IN";
+                    recognizerIntent.putExtra("android.speech.extra.EXTRA_ADDITIONAL_LANGUAGES", new String[]{"hi-IN", "en-US"});
+                } else if ("hi-IN".equalsIgnoreCase(currentVoiceLanguage) || "hi".equalsIgnoreCase(currentVoiceLanguage)) {
+                    primaryLang = "hi-IN";
+                    recognizerIntent.putExtra("android.speech.extra.EXTRA_ADDITIONAL_LANGUAGES", new String[]{"en-IN", "en-US"});
+                } else {
+                    primaryLang = "hi-IN";
+                    recognizerIntent.putExtra("android.speech.extra.EXTRA_ADDITIONAL_LANGUAGES", new String[]{"hi-IN", "en-IN", "en-US"});
+                }
+                recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, primaryLang);
+                recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, primaryLang);
 
                 speechRecognizer.setRecognitionListener(new RecognitionListener() {
                     @Override
-                    public void onReadyForSpeech(Bundle params) {}
+                    public void onReadyForSpeech(Bundle params) {
+                        // After recognizer is ready, unmute music stream (start beep has passed in silence)
+                        mainHandler.postDelayed(() -> {
+                            if (audioHelper != null) {
+                                audioHelper.unmuteMusicAfterStart();
+                            }
+                        }, 300);
+
+                        if (MainActivity.activeInstance != null) {
+                            MainActivity.activeInstance.runOnUiThread(() -> MainActivity.activeInstance.updateVoiceState("listening"));
+                        }
+                    }
 
                     @Override
-                    public void onBeginningOfSpeech() {}
+                    public void onBeginningOfSpeech() {
+                        if (MainActivity.activeInstance != null) {
+                            MainActivity.activeInstance.runOnUiThread(() -> MainActivity.activeInstance.updateVoiceState("speaking"));
+                        }
+                    }
 
                     @Override
                     public void onRmsChanged(float rmsdB) {}
@@ -208,13 +264,29 @@ public class VoiceAssistantService extends Service {
                     public void onBufferReceived(byte[] buffer) {}
 
                     @Override
-                    public void onEndOfSpeech() {}
+                    public void onEndOfSpeech() {
+                        if (MainActivity.activeInstance != null) {
+                            MainActivity.activeInstance.runOnUiThread(() -> MainActivity.activeInstance.updateVoiceState("processing"));
+                        }
+                    }
 
                     @Override
                     public void onError(int error) {
-                        // Error 7: ERROR_NO_MATCH, Error 6: ERROR_SPEECH_TIMEOUT
-                        long delay = (error == 7 || error == 6) ? 350 : 1500;
-                        scheduleRestart(delay);
+                        if (!shouldRun || isTtsSpeaking) return;
+
+                        if (error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT || error == SpeechRecognizer.ERROR_NO_MATCH) {
+                            // Normal silence timeout; restart silently without delay
+                            scheduleRestart(250);
+                        } else if (error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY || error == SpeechRecognizer.ERROR_CLIENT) {
+                            if (speechRecognizer != null) {
+                                try { speechRecognizer.cancel(); } catch (Exception ignored) {}
+                            }
+                            scheduleRestart(500);
+                        } else {
+                            // Recover from unexpected recognition error
+                            destroyRecognizer();
+                            scheduleRestart(1200);
+                        }
                     }
 
                     @Override
@@ -222,26 +294,40 @@ public class VoiceAssistantService extends Service {
                         if (results != null) {
                             ArrayList<String> matches = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
                             if (matches != null && !matches.isEmpty()) {
-                                for (String match : matches) {
-                                    if (match != null && checkForWakeTrigger(match)) {
-                                        break;
+                                String chosenMatch = matches.get(0);
+                                for (String m : matches) {
+                                    if (m != null) {
+                                        String lower = m.toLowerCase();
+                                        if (lower.contains("hey vc") || lower.contains("vc") || lower.contains("alarm")
+                                                || lower.contains("अलार्म") || lower.contains("task") || lower.contains("टास्क")
+                                                || lower.contains("stop") || lower.contains("snooze") || lower.contains("हे वीसी")
+                                                || lower.contains("band") || lower.contains("chup") || lower.contains("time")
+                                                || lower.contains("समय") || lower.contains("बजे") || lower.contains("delete")
+                                                || lower.contains("डिलीट") || lower.contains("hatao") || lower.contains("हटाओ")
+                                                || lower.contains("dismiss") || lower.contains("डिसमिस") || lower.contains("cancel")
+                                                || lower.contains("rok") || lower.contains("turn off") || lower.contains("clear")) {
+                                            chosenMatch = m;
+                                            break;
+                                        }
                                     }
+                                }
+
+                                if (chosenMatch != null && !chosenMatch.trim().isEmpty()) {
+                                    handleRecognizedSpeech(chosenMatch.trim());
                                 }
                             }
                         }
-                        scheduleRestart(400);
+
+                        scheduleRestart(600);
                     }
 
                     @Override
                     public void onPartialResults(Bundle partialResults) {
-                        if (partialResults != null) {
+                        if (partialResults != null && MainActivity.activeInstance != null) {
                             ArrayList<String> partials = partialResults.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
                             if (partials != null && !partials.isEmpty()) {
-                                for (String p : partials) {
-                                    if (p != null && checkForWakeTrigger(p)) {
-                                        break;
-                                    }
-                                }
+                                final String text = partials.get(0);
+                                MainActivity.activeInstance.runOnUiThread(() -> MainActivity.activeInstance.handleLiveTranscript(text));
                             }
                         }
                     }
@@ -250,47 +336,32 @@ public class VoiceAssistantService extends Service {
                     public void onEvent(int eventType, Bundle params) {}
                 });
 
+                // Mute audio streams immediately before startListening so start beep is completely silent!
+                audioHelper.muteBeforeStartListening();
                 speechRecognizer.startListening(recognizerIntent);
+
             } catch (Exception e) {
                 Log.e(TAG, "Error in speech listener start", e);
-                scheduleRestart(2500);
+                destroyRecognizer();
+                scheduleRestart(2000);
             }
         });
     }
 
-    private long activeListeningUntil = 0;
+    private void handleRecognizedSpeech(String raw) {
+        if (raw == null || raw.trim().isEmpty()) return;
+        Log.d(TAG, "Speech recognized: " + raw);
 
-    private boolean checkForWakeTrigger(String raw) {
-        if (raw == null) return false;
-        String text = raw.toLowerCase(Locale.getDefault()).trim();
+        // Restore audio completely so TTS or media can respond loudly
+        audioHelper.restoreAllAudio();
 
-        boolean isWithinActiveWindow = System.currentTimeMillis() < activeListeningUntil;
+        // Wake screen if off or locked
+        wakeScreen();
 
-        boolean hasWakeWord = text.contains("hey vc") || text.contains("vc") || text.contains("hey vc clock")
-                || text.contains("voice clock") || text.contains("हे वीसी") || text.contains("नमस्ते वीसी")
-                || text.contains("ओके वीसी");
-
-        boolean isAlarmCommand = text.contains("snooze") || text.contains("स्नूज़")
-                || text.contains("dismiss") || text.contains("डिसमिस")
-                || text.contains("stop") || text.contains("बंद करो")
-                || text.contains("band karo") || text.contains("chup")
-                || text.startsWith("alarm") || text.startsWith("अलार्म")
-                || text.startsWith("task") || text.startsWith("टास्क");
-
-        if (hasWakeWord || isWithinActiveWindow || isAlarmCommand) {
-            Log.d(TAG, "Voice trigger matched: " + raw);
-
-            if (hasWakeWord) {
-                // Keep assistant active to listen for follow-up command for 8 seconds
-                activeListeningUntil = System.currentTimeMillis() + 8000;
-            } else {
-                activeListeningUntil = 0;
-            }
-
-            // 1. Wake the screen if screen is off/locked
-            wakeScreen();
-
-            // 2. Bring MainActivity to front over lockscreen
+        if (MainActivity.activeInstance != null && MainActivity.activeInstance.getWebView() != null) {
+            MainActivity.activeInstance.runOnUiThread(() -> MainActivity.activeInstance.handleVoiceInput(raw));
+        } else {
+            // MainActivity is not currently visible or active; wake it up and deliver command
             Intent activityIntent = new Intent(this, MainActivity.class);
             activityIntent.setAction("com.voiceclock.vc.WAKE_VOICE");
             activityIntent.putExtra("command", raw);
@@ -306,21 +377,44 @@ public class VoiceAssistantService extends Service {
                 Log.e(TAG, "Failed to start MainActivity for voice wake", e);
             }
 
-            // 3. Send package-secured broadcast to MainActivity
             Intent broadcast = new Intent("com.voiceclock.vc.VOICE_COMMAND");
-            broadcast.setPackage(getPackageName()); // 100% SECURE: Restricted only to this app!
+            broadcast.setPackage(getPackageName());
             broadcast.putExtra("command", raw);
             sendBroadcast(broadcast);
-
-            return true;
         }
-        return false;
     }
 
-    @Override
-    public void onDestroy() {
-        shouldRun = false;
+    public void pauseListeningForTTS() {
+        isTtsSpeaking = true;
         mainHandler.removeCallbacks(restartRunnable);
+        if (speechRecognizer != null) {
+            try { speechRecognizer.cancel(); } catch (Exception ignored) {}
+        }
+        if (audioHelper != null) {
+            audioHelper.restoreAllAudio();
+        }
+    }
+
+    public void resumeListeningAfterTTS() {
+        isTtsSpeaking = false;
+        if (shouldRun) {
+            scheduleRestart(400);
+        }
+    }
+
+    public void setVoiceLanguage(String lang) {
+        if (lang != null && !lang.trim().isEmpty()) {
+            this.currentVoiceLanguage = lang;
+            if (shouldRun && !isTtsSpeaking) {
+                if (speechRecognizer != null) {
+                    try { speechRecognizer.cancel(); } catch (Exception ignored) {}
+                }
+                scheduleRestart(250);
+            }
+        }
+    }
+
+    private void destroyRecognizer() {
         if (speechRecognizer != null) {
             try {
                 speechRecognizer.cancel();
@@ -328,20 +422,35 @@ public class VoiceAssistantService extends Service {
             } catch (Exception ignored) {}
             speechRecognizer = null;
         }
-        if (textToSpeech != null) {
-            try {
-                textToSpeech.stop();
-                textToSpeech.shutdown();
-            } catch (Exception ignored) {}
-            textToSpeech = null;
-        }
-        if (screenReceiver != null) {
-            try {
-                unregisterReceiver(screenReceiver);
-            } catch (Exception ignored) {}
+    }
+
+    private void stopListeningAndCleanup() {
+        shouldRun = false;
+        mainHandler.removeCallbacks(restartRunnable);
+        destroyRecognizer();
+        if (audioHelper != null) {
+            audioHelper.restoreAllAudio();
         }
         releaseCpuWakeLock();
         stopForeground(true);
+        activeService = null;
+
+        if (MainActivity.activeInstance != null) {
+            MainActivity.activeInstance.runOnUiThread(() -> MainActivity.activeInstance.onVoiceServiceStopped());
+        }
+    }
+
+    @Override
+    public void onTaskRemoved(Intent rootIntent) {
+        super.onTaskRemoved(rootIntent);
+        Log.d(TAG, "App task removed from recents / all tab history. Automatically stopping VoiceAssistantService.");
+        stopListeningAndCleanup();
+        stopSelf();
+    }
+
+    @Override
+    public void onDestroy() {
+        stopListeningAndCleanup();
         super.onDestroy();
     }
 

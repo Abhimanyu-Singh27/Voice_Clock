@@ -1,6 +1,5 @@
 package com.voiceclock.vc;
 
-import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Context;
@@ -10,49 +9,53 @@ import android.media.MediaPlayer;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.os.PowerManager;
-import android.speech.tts.TextToSpeech;
-import android.speech.tts.Voice;
+import android.os.Vibrator;
+import android.speech.tts.UtteranceProgressListener;
 import android.util.Log;
-import java.util.Locale;
-import java.util.Set;
 
 public class AlarmService extends Service {
 
-    private static final String CHANNEL_ID = AlarmNotificationHelper.CHANNEL_ID;
     private static final String WAKELOCK_TAG = "VoiceClock:AlarmWakeLock";
 
     private MediaPlayer mediaPlayer;
-    private TextToSpeech textToSpeech;
     private PowerManager.WakeLock cpuWakeLock;
     private PowerManager.WakeLock screenWakeLock;
     private String currentAlarmId;
-    private volatile boolean isRinging = false;
-    private final android.os.Handler ttsHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private final Handler ttsHandler = new Handler(Looper.getMainLooper());
     private Runnable ttsRepeatRunnable = null;
+    private final Handler silenceHandler = new Handler(Looper.getMainLooper());
+    private Runnable autoSilenceRunnable = null;
+    private final Handler gradualHandler = new Handler(Looper.getMainLooper());
+    private Runnable gradualRunnable = null;
+    private Vibrator vibrator = null;
+    private float currentVolume = 1.0f;
+    private float targetVolume = 1.0f;
+    private volatile boolean isRinging = false;
+    private volatile boolean isTtsActive = false;
 
     @Override
     public void onCreate() {
         super.onCreate();
-
-        createNotificationChannel();
+        AlarmNotificationHelper.createNotificationChannel(this);
         createWakeLocks();
+        acquireWakeLocks();
     }
 
     private void createWakeLocks() {
-        PowerManager powerManager =
-                (PowerManager) getSystemService(POWER_SERVICE);
-
+        PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
         if (powerManager != null) {
-            // CPU lock to ensure processing continues
+            // CPU lock ensures background processing and audio continue
             cpuWakeLock = powerManager.newWakeLock(
                     PowerManager.PARTIAL_WAKE_LOCK,
                     WAKELOCK_TAG + ":CPU"
             );
             cpuWakeLock.setReferenceCounted(false);
 
-            // Screen lock to forcibly wake up and turn on the display
+            // Screen lock physically illuminates and keeps the display on
             try {
                 screenWakeLock = powerManager.newWakeLock(
                         PowerManager.SCREEN_BRIGHT_WAKE_LOCK
@@ -62,66 +65,41 @@ public class AlarmService extends Service {
                 );
                 screenWakeLock.setReferenceCounted(false);
             } catch (Exception e) {
-                Log.w("VOICE_CLOCK", "Could not create screen wake lock", e);
+                Log.w("VOICE_CLOCK", "Could not create screen wake lock in AlarmService", e);
             }
         }
     }
 
     private void acquireWakeLocks() {
         if (cpuWakeLock != null && !cpuWakeLock.isHeld()) {
-            cpuWakeLock.acquire(10 * 60 * 1000L);
+            try {
+                cpuWakeLock.acquire(10 * 60 * 1000L); // 10 minutes
+            } catch (Exception ignored) {}
         }
         if (screenWakeLock != null && !screenWakeLock.isHeld()) {
             try {
-                screenWakeLock.acquire(45 * 1000L); // Keep screen actively awake for 45s or until dismissed
+                screenWakeLock.acquire(60 * 1000L); // 60 seconds
             } catch (Exception ignored) {}
         }
     }
 
     private void releaseWakeLocks() {
         if (cpuWakeLock != null && cpuWakeLock.isHeld()) {
-            cpuWakeLock.release();
+            try {
+                cpuWakeLock.release();
+            } catch (Exception ignored) {}
         }
         if (screenWakeLock != null && screenWakeLock.isHeld()) {
             try {
                 screenWakeLock.release();
             } catch (Exception ignored) {}
         }
-    }
-
-    private void createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel =
-                    new NotificationChannel(
-                            CHANNEL_ID,
-                            "Voice Clock Alarm",
-                            NotificationManager.IMPORTANCE_HIGH
-                    );
-
-            channel.setDescription("Critical alarm notifications that show over lock screen");
-            channel.enableVibration(true);
-            channel.setBypassDnd(true);
-            channel.setLockscreenVisibility(android.app.Notification.VISIBILITY_PUBLIC);
-
-            Uri defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
-            AudioAttributes audioAttributes = new AudioAttributes.Builder()
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .setUsage(AudioAttributes.USAGE_ALARM)
-                    .build();
-            channel.setSound(defaultSoundUri, audioAttributes);
-
-            NotificationManager manager =
-                    getSystemService(NotificationManager.class);
-
-            if (manager != null) {
-                manager.createNotificationChannel(channel);
-            }
-        }
+        AlarmReceiver.releaseStaticWakeLocks();
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.d("VOICE_CLOCK", "AlarmService started");
+        Log.d("VOICE_CLOCK", "AlarmService onStartCommand");
 
         if (intent == null || intent.getAction() == null) {
             stopSelf();
@@ -139,24 +117,43 @@ public class AlarmService extends Service {
             return START_NOT_STICKY;
         }
 
-        isRinging = true;
-        currentAlarmId = intent.getStringExtra("alarmId");
+        String newAlarmId = intent.getStringExtra("alarmId");
+        if (newAlarmId != null && !AlarmPreferences.isAlarmActive(this, newAlarmId)) {
+            Log.w("VOICE_CLOCK", "AlarmService: Alarm " + newAlarmId + " is deleted or inactive. Stopping service!");
+            AlarmPreferences.cancelAllAlarmIntents(this, newAlarmId);
+            stopAlarm();
+            return START_NOT_STICKY;
+        }
 
-        // Immediately wake CPU and display
+        if (isRinging && currentAlarmId != null && currentAlarmId.equals(newAlarmId)) {
+            Log.d("VOICE_CLOCK", "AlarmService already actively ringing for " + currentAlarmId);
+            return START_STICKY;
+        }
+
+        isRinging = true;
+        currentAlarmId = newAlarmId;
+
+        // Restore all audio streams immediately so alarm sound is completely audible
+        SilentSpeechAudioHelper.restoreGlobalAudio(this);
+        if (VoiceAssistantService.activeService != null) {
+            VoiceAssistantService.activeService.pauseListeningForTTS();
+        }
+
+        // Immediately wake CPU and display hardware
         acquireWakeLocks();
 
-        // Start foreground notification with full screen intent
+        // Start foreground notification with full-screen intent
         startForeground(
                 AlarmNotificationHelper.NOTIFICATION_ID,
                 AlarmNotificationHelper.createNotification(this, intent)
         );
 
-        // Open alarm screen activity
+        // Open full-screen AlarmActivity to turn on screen and show Snooze/Dismiss UI
         Intent alarmIntent = new Intent(this, AlarmActivity.class);
+        alarmIntent.setAction("com.voiceclock.vc.ACTION_ALARM_RING_" + ((currentAlarmId != null) ? currentAlarmId : System.currentTimeMillis()));
         if (intent.getExtras() != null) {
             alarmIntent.putExtras(intent.getExtras());
         }
-
         alarmIntent.addFlags(
                 Intent.FLAG_ACTIVITY_NEW_TASK
                         | Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -165,113 +162,251 @@ public class AlarmService extends Service {
         );
 
         try {
-            android.os.Bundle options = null;
+            android.os.Bundle optionsBundle = null;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                android.app.ActivityOptions actOpt = android.app.ActivityOptions.makeBasic();
-                actOpt.setPendingIntentBackgroundActivityStartMode(android.app.ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED);
-                options = actOpt.toBundle();
+                android.app.ActivityOptions options = android.app.ActivityOptions.makeBasic();
+                options.setPendingIntentBackgroundActivityStartMode(android.app.ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED);
+                optionsBundle = options.toBundle();
             }
-            if (options != null) {
-                startActivity(alarmIntent, options);
+            if (optionsBundle != null) {
+                startActivity(alarmIntent, optionsBundle);
             } else {
                 startActivity(alarmIntent);
             }
         } catch (Exception e) {
-            Log.e("VOICE_CLOCK", "Failed to launch AlarmActivity", e);
+            Log.w("VOICE_CLOCK", "Direct startActivity from AlarmService threw exception: " + e.getMessage());
+        }
+
+        // 1. Auto-silence setup
+        final int silenceSecs = AlarmPreferences.getSilenceAfter(this);
+        if (autoSilenceRunnable != null) {
+            silenceHandler.removeCallbacks(autoSilenceRunnable);
+            autoSilenceRunnable = null;
+        }
+        if (silenceSecs > 0) {
+            autoSilenceRunnable = () -> {
+                Log.d("VOICE_CLOCK", "Auto-silence duration reached: " + silenceSecs + "s. Stopping alarm.");
+                stopAlarm();
+            };
+            silenceHandler.postDelayed(autoSilenceRunnable, silenceSecs * 1000L);
+        }
+
+        // 2. Volume and gradual increase setup
+        final int alarmVol = AlarmPreferences.getAlarmVolume(this);
+        targetVolume = Math.max(0.05f, Math.min(1.0f, alarmVol / 100.0f));
+        final int gradualSecs = AlarmPreferences.getGradualVolumeSeconds(this);
+
+        if (gradualRunnable != null) {
+            gradualHandler.removeCallbacks(gradualRunnable);
+            gradualRunnable = null;
+        }
+
+        if (gradualSecs > 0) {
+            currentVolume = 0.05f;
+            final long intervalMs = 250L;
+            final float totalSteps = (gradualSecs * 1000f) / intervalMs;
+            final float stepVolume = (targetVolume - 0.05f) / Math.max(1f, totalSteps);
+
+            gradualRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    if (!isRinging) return;
+                    currentVolume = Math.min(targetVolume, currentVolume + stepVolume);
+                    if (mediaPlayer != null) {
+                        try {
+                            float vol = isTtsActive ? currentVolume * 0.15f : currentVolume;
+                            mediaPlayer.setVolume(vol, vol);
+                        } catch (Exception ignored) {}
+                    }
+                    if (currentVolume < targetVolume) {
+                        gradualHandler.postDelayed(this, intervalMs);
+                    }
+                }
+            };
+            gradualHandler.postDelayed(gradualRunnable, intervalMs);
+        } else {
+            currentVolume = targetVolume;
+        }
+
+        // 3. Vibration setup
+        if (AlarmPreferences.isTimerVibrate(this)) {
+            try {
+                vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                if (vibrator != null && vibrator.hasVibrator()) {
+                    long[] pattern = {0, 600, 400, 600, 400};
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        vibrator.vibrate(android.os.VibrationEffect.createWaveform(pattern, 0));
+                    } else {
+                        vibrator.vibrate(pattern, 0);
+                    }
+                }
+            } catch (Exception ignored) {}
         }
 
         String type = intent.getStringExtra("type");
         String label = intent.getStringExtra("label");
         String text = intent.getStringExtra("text");
         String voice = intent.getStringExtra("voice");
+        String uri = intent.getStringExtra("uri");
         final String selectedVoice = (voice != null && !voice.trim().isEmpty()) ? voice : "female_1";
 
-        if ("tts".equals(type) || "task".equals(type)) {
+        boolean hasChosenAudioFile = ("file".equals(type) || "upload".equals(type)) && (uri != null && !uri.trim().isEmpty());
 
-            String speakText =
+        if (hasChosenAudioFile) {
+            // ONLY if user explicitly chose an audio file to play
+            try {
+                mediaPlayer = new MediaPlayer();
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    mediaPlayer.setAudioAttributes(new AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_ALARM)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                            .build());
+                }
+                mediaPlayer.setDataSource(this, Uri.parse(uri));
+                mediaPlayer.setLooping(true);
+                mediaPlayer.prepare();
+                mediaPlayer.setVolume(currentVolume, currentVolume);
+                mediaPlayer.start();
+            } catch (Exception e) {
+                Log.e("VOICE_CLOCK", "Failed to play chosen audio file", e);
+            }
+        } else {
+            // Voice / TTS / Default alarm:
+            // 1. Immediately start MediaPlayer with alarm chime / sound so ringing starts with ZERO delay!
+            try {
+                mediaPlayer = MediaPlayer.create(this, R.raw.alarm_sound);
+                if (mediaPlayer == null) {
+                    Uri defaultUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+                    if (defaultUri == null) {
+                        defaultUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+                    }
+                    mediaPlayer = MediaPlayer.create(this, defaultUri);
+                }
+                if (mediaPlayer != null) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        mediaPlayer.setAudioAttributes(new AudioAttributes.Builder()
+                                .setUsage(AudioAttributes.USAGE_ALARM)
+                                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                                .build());
+                    }
+                    mediaPlayer.setLooping(true);
+                    mediaPlayer.setVolume(currentVolume, currentVolume);
+                    mediaPlayer.start();
+                    Log.d("VOICE_CLOCK", "Instant alarm ringtone started without delay");
+                }
+            } catch (Exception e) {
+                Log.w("VOICE_CLOCK", "Could not start instant alarm ringtone", e);
+            }
+
+            // 2. Speak Text-To-Speech voice text with background sound ducking
+            final String speakText =
                     (text == null || text.trim().isEmpty())
-                            ? label
+                            ? ((label == null || label.trim().isEmpty()) ? "Alarm" : label)
                             : text;
 
-            textToSpeech = new TextToSpeech(this, status -> {
+            AppTtsManager ttsMgr = AppTtsManager.getInstance(this);
+            if (ttsMgr.isReady()) {
+                speakTtsWithDucking(speakText, selectedVoice);
+            } else {
+                ttsMgr.waitForReady(new AppTtsManager.OnInitCallback() {
+                    @Override
+                    public void onReady() {
+                        if (!isRinging) return;
+                        speakTtsWithDucking(speakText, selectedVoice);
+                    }
 
-                if (status == TextToSpeech.SUCCESS && textToSpeech != null) {
-
-                    configureTtsVoice(textToSpeech, selectedVoice, speakText);
-
-                    textToSpeech.setOnUtteranceProgressListener(new android.speech.tts.UtteranceProgressListener() {
-                        @Override
-                        public void onStart(String utteranceId) {}
-
-                        @Override
-                        public void onDone(String utteranceId) {
-                            if (!isRinging) return;
-                            ttsRepeatRunnable = () -> {
-                                if (!isRinging || textToSpeech == null) return;
-                                try {
-                                    configureTtsVoice(textToSpeech, selectedVoice, speakText);
-                                    textToSpeech.speak(
-                                            speakText,
-                                            TextToSpeech.QUEUE_FLUSH,
-                                            null,
-                                            "VOICE_CLOCK"
-                                    );
-                                } catch (Exception ignored) {}
-                            };
-                            ttsHandler.postDelayed(ttsRepeatRunnable, 2000);
-                        }
-
-                        @Override
-                        public void onError(String utteranceId) {}
-                    });
-
-                    textToSpeech.speak(
-                            speakText,
-                            TextToSpeech.QUEUE_FLUSH,
-                            null,
-                            "VOICE_CLOCK"
-                    );
-                }
-
-            });
-
-        } else if ("file".equals(type)) {
-
-            try {
-                String uri = intent.getStringExtra("uri");
-                if (uri != null) {
-                    mediaPlayer = new MediaPlayer();
-                    mediaPlayer.setDataSource(this, android.net.Uri.parse(uri));
-                    mediaPlayer.setLooping(true);
-                    mediaPlayer.prepare();
-                    mediaPlayer.start();
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
+                    @Override
+                    public void onError() {
+                        Log.e("VOICE_CLOCK", "TTS failed to initialize for alarm");
+                    }
+                });
             }
-
-        } else {
-
-            // Default alarm ringtone playback
-            try {
-                Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
-                if (alarmSound == null) alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
-                mediaPlayer = MediaPlayer.create(this, alarmSound);
-                if (mediaPlayer != null) {
-                    mediaPlayer.setLooping(true);
-                    mediaPlayer.start();
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
         }
 
         return START_STICKY;
     }
 
+    private void speakTtsWithDucking(final String speakText, final String selectedVoice) {
+        if (!isRinging) return;
+        AppTtsManager ttsMgr = AppTtsManager.getInstance(this);
+        ttsMgr.configureVoice(selectedVoice, speakText);
+
+        isTtsActive = true;
+        // Duck background ringtone so spoken voice is clear and crisp
+        if (mediaPlayer != null && isRinging) {
+            try {
+                mediaPlayer.setVolume(currentVolume * 0.15f, currentVolume * 0.15f);
+            } catch (Exception ignored) {}
+        }
+
+        ttsMgr.speak(speakText, currentVolume, "VOICE_CLOCK", new UtteranceProgressListener() {
+            @Override
+            public void onStart(String utteranceId) {
+                isTtsActive = true;
+                if (mediaPlayer != null && isRinging) {
+                    try {
+                        mediaPlayer.setVolume(currentVolume * 0.15f, currentVolume * 0.15f);
+                    } catch (Exception ignored) {}
+                }
+            }
+
+            @Override
+            public void onDone(String utteranceId) {
+                if (!isRinging) return;
+                isTtsActive = false;
+                // Restore ringtone volume between voice repeats
+                if (mediaPlayer != null) {
+                    try {
+                        mediaPlayer.setVolume(currentVolume, currentVolume);
+                    } catch (Exception ignored) {}
+                }
+                ttsRepeatRunnable = () -> {
+                    if (!isRinging) return;
+                    speakTtsWithDucking(speakText, selectedVoice);
+                };
+                ttsHandler.postDelayed(ttsRepeatRunnable, 2500);
+            }
+
+            @Override
+            public void onError(String utteranceId) {
+                if (!isRinging) return;
+                isTtsActive = false;
+                if (mediaPlayer != null) {
+                    try {
+                        mediaPlayer.setVolume(currentVolume, currentVolume);
+                    } catch (Exception ignored) {}
+                }
+                ttsRepeatRunnable = () -> {
+                    if (!isRinging) return;
+                    speakTtsWithDucking(speakText, selectedVoice);
+                };
+                ttsHandler.postDelayed(ttsRepeatRunnable, 2500);
+            }
+        });
+    }
+
     private synchronized void stopAlarm() {
         isRinging = false;
+        isTtsActive = false;
+
+        if (autoSilenceRunnable != null) {
+            silenceHandler.removeCallbacks(autoSilenceRunnable);
+            autoSilenceRunnable = null;
+        }
+        silenceHandler.removeCallbacksAndMessages(null);
+
+        if (gradualRunnable != null) {
+            gradualHandler.removeCallbacks(gradualRunnable);
+            gradualRunnable = null;
+        }
+        gradualHandler.removeCallbacksAndMessages(null);
+
+        if (vibrator != null) {
+            try {
+                vibrator.cancel();
+            } catch (Exception ignored) {}
+            vibrator = null;
+        }
 
         if (ttsRepeatRunnable != null) {
             ttsHandler.removeCallbacks(ttsRepeatRunnable);
@@ -281,22 +416,19 @@ public class AlarmService extends Service {
 
         if (mediaPlayer != null) {
             try {
-                mediaPlayer.stop();
+                if (mediaPlayer.isPlaying()) {
+                    mediaPlayer.stop();
+                }
+                mediaPlayer.reset();
                 mediaPlayer.release();
             } catch (Exception ignored) {}
             mediaPlayer = null;
         }
 
-        if (textToSpeech != null) {
-            try {
-                textToSpeech.stop();
-                textToSpeech.shutdown();
-            } catch (Exception ignored) {}
-            textToSpeech = null;
-        }
+        AppTtsManager.getInstance(this).stop();
 
         try {
-            android.app.NotificationManager nm = (android.app.NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             if (nm != null) {
                 nm.cancel(AlarmNotificationHelper.NOTIFICATION_ID);
             }
@@ -306,95 +438,15 @@ public class AlarmService extends Service {
             stopForeground(true);
         } catch (Exception ignored) {}
 
-        releaseWakeLocks();
-        stopSelf();
-    }
-
-    private void configureTtsVoice(TextToSpeech tts, String voiceId, String text) {
-        if (tts == null) return;
-
-        boolean isHindi = isTextHindi(text) || "hi".equalsIgnoreCase(AlarmPreferences.getAppLanguage(this));
-        Locale targetLocale = isHindi ? new Locale("hi", "IN") : Locale.US;
-
-        float pitch = 1.0f;
-        float rate = 1.0f;
-        boolean preferFemale = true;
-
-        if ("male_1".equals(voiceId)) {
-            pitch = 0.65f;
-            rate = 0.95f;
-            preferFemale = false;
-        } else if ("female_2".equals(voiceId)) {
-            pitch = 1.30f;
-            rate = 1.05f;
-            preferFemale = true;
-        } else if ("male_2".equals(voiceId)) {
-            pitch = 0.76f;
-            rate = 0.92f;
-            preferFemale = false;
-        } else if ("female_in".equals(voiceId)) {
-            targetLocale = isHindi ? new Locale("hi", "IN") : new Locale("en", "IN");
-            pitch = 1.12f;
-            rate = 1.0f;
-            preferFemale = true;
-        } else if ("male_in".equals(voiceId)) {
-            targetLocale = isHindi ? new Locale("hi", "IN") : new Locale("en", "IN");
-            pitch = 0.72f;
-            rate = 0.95f;
-            preferFemale = false;
-        } else { // "female_1"
-            pitch = 1.15f;
-            rate = 1.0f;
-            preferFemale = true;
-        }
-
+        // Broadcast to close AlarmActivity if it's currently showing
         try {
-            tts.setLanguage(targetLocale);
+            Intent dismissAct = new Intent("com.voiceclock.vc.ACTION_DISMISS_ALARM_ACTIVITY");
+            dismissAct.setPackage(getPackageName());
+            sendBroadcast(dismissAct);
         } catch (Exception ignored) {}
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            try {
-                Set<Voice> voices = tts.getVoices();
-                if (voices != null && !voices.isEmpty()) {
-                    Voice bestMatch = null;
-                    for (Voice v : voices) {
-                        if (v == null || v.getName() == null) continue;
-                        String vName = v.getName().toLowerCase(Locale.ROOT);
-                        Locale vLoc = v.getLocale();
-                        if (vLoc != null && vLoc.getLanguage().equalsIgnoreCase(targetLocale.getLanguage())) {
-                            boolean isFem = vName.contains("female") || vName.contains("#female") || vName.contains("-fem") || vName.contains("f0") || vName.contains("f1") || vName.contains("hia") || vName.contains("hic") || vName.contains("enc") || vName.contains("enf") || vName.contains("iol");
-                            boolean isMal = vName.contains("male") || vName.contains("#male") || vName.contains("-mal") || vName.contains("m0") || vName.contains("m1") || vName.contains("hie") || vName.contains("hid") || vName.contains("iom") || vName.contains("end") || vName.contains("ene") || vName.contains("sfg");
-                            if (preferFemale && isFem) {
-                                bestMatch = v;
-                                break;
-                            } else if (!preferFemale && isMal) {
-                                bestMatch = v;
-                                break;
-                            } else if (bestMatch == null) {
-                                bestMatch = v;
-                            }
-                        }
-                    }
-                    if (bestMatch != null) {
-                        tts.setVoice(bestMatch);
-                    }
-                }
-            } catch (Exception e) {
-                Log.w("VOICE_CLOCK", "Could not set custom system Voice object", e);
-            }
-        }
-
-        // Apply pitch & speech rate AFTER setVoice to ensure engine preserves custom pitch
-        tts.setPitch(pitch);
-        tts.setSpeechRate(rate);
-    }
-
-    private boolean isTextHindi(String text) {
-        if (text == null) return false;
-        for (char c : text.toCharArray()) {
-            if (c >= 0x0900 && c <= 0x097F) return true;
-        }
-        return false;
+        releaseWakeLocks();
+        stopSelf();
     }
 
     @Override

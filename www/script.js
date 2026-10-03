@@ -12,11 +12,15 @@ function initVoiceClockApp() {
       window.syncNativeAlarmState();
     }
     if (window.AndroidVoice) {
-      if (typeof window.AndroidVoice.checkAndRequestExactAlarmPermission === 'function') {
-        window.AndroidVoice.checkAndRequestExactAlarmPermission();
-      }
-      if (typeof window.AndroidVoice.checkAndRequestBatteryOptimization === 'function') {
-        window.AndroidVoice.checkAndRequestBatteryOptimization();
+      if (typeof window.AndroidVoice.checkAllAlarmPermissions === 'function') {
+        window.AndroidVoice.checkAllAlarmPermissions();
+      } else {
+        if (typeof window.AndroidVoice.checkAndRequestExactAlarmPermission === 'function') {
+          window.AndroidVoice.checkAndRequestExactAlarmPermission();
+        }
+        if (typeof window.AndroidVoice.checkAndRequestBatteryOptimization === 'function') {
+          window.AndroidVoice.checkAndRequestBatteryOptimization();
+        }
       }
     }
   });
@@ -157,14 +161,34 @@ function initVoiceClockApp() {
   if (userSettings.timerVibrate === undefined) userSettings.timerVibrate = false;
 
   function syncNativeHardwareSettings() {
-    if (window.AndroidVoice && typeof window.AndroidVoice.syncHardwareSettings === 'function') {
-      const snoozeMins = parseInt(userSettings.snoozeDuration || '10', 10) || 10;
-      window.AndroidVoice.syncHardwareSettings(
-        userSettings.volumeButtonsAction || 'Remind me later',
-        userSettings.powerButtonAction || 'Dismiss',
-        !!userSettings.timerVibrate,
-        snoozeMins
-      );
+    const snoozeMins = parseInt(userSettings.snoozeDuration || '10', 10) || 10;
+    const vol = parseInt(userSettings.alarmVolume, 10) || 80;
+    const manualOffset = parseInt(userSettings.manualTimeOffset, 10) || 0;
+    const manualEnabled = !!userSettings.manualTimeEnabled;
+
+    if (window.AndroidVoice) {
+      if (typeof window.AndroidVoice.syncAllSettings === 'function') {
+        window.AndroidVoice.syncAllSettings(
+          userSettings.volumeButtonsAction || 'Remind me later',
+          userSettings.powerButtonAction || 'Dismiss',
+          !!userSettings.timerVibrate,
+          snoozeMins,
+          userSettings.silenceAfter || '1 minute',
+          vol,
+          userSettings.gradualVolume || 'Off',
+          userSettings.timerSound || '',
+          userSettings.timezoneIana || 'Asia/Kolkata',
+          manualOffset,
+          manualEnabled
+        );
+      } else if (typeof window.AndroidVoice.syncHardwareSettings === 'function') {
+        window.AndroidVoice.syncHardwareSettings(
+          userSettings.volumeButtonsAction || 'Remind me later',
+          userSettings.powerButtonAction || 'Dismiss',
+          !!userSettings.timerVibrate,
+          snoozeMins
+        );
+      }
     }
   }
 
@@ -274,13 +298,27 @@ function initVoiceClockApp() {
       clearAllNotifsBtn: 'Clear',
       settingRemindFamilyLabel: 'Remind Family and Friends',
       settingRemindFamilySub: 'Send caring reminders to loved ones anywhere',
+      settingEmailConfigLabel: 'Email Service (Brevo API)',
+      settingEmailConfigSub: 'Configure API key for real verification OTP emails',
+      emailConfigModalTitle: 'Email Service Settings',
+      emailConfigModalSub: 'Brevo (Sendinblue) REST API for authentic OTP delivery',
+      lblBrevoApiKey: 'Brevo API Key (xkeysib-...):',
+      lblBrevoSenderEmail: 'Sender Email (verified in Brevo):',
+      lblBrevoSenderName: 'Sender Name:',
+      btnOpenEmailConfig: '⚙ Email Service Settings (Brevo)',
+      otpStatusHeading: 'OTP Sent to Email',
+      otpStatusDesc: 'Check your inbox and spam folder for the 8-digit verification code.',
       vcCreateTitle: 'Create VC Account',
       familyHeroHeading: 'Stay Connected with Family',
       familyHeroDesc: 'Remind parents to take medicine, ask kids if they had lunch, or schedule caring tasks for friends anywhere in the world.',
       lblVcName: 'Your Name:',
       lblVcEmail: 'Email Address (for verification):',
       btnCreateVcAccountText: 'Create Account & Send OTP',
-      linkLoginVcAccount: 'Already have a VC ID? Restore Account',
+      linkLoginVcAccount: 'Already have a VC ID? Log In / Restore Account',
+      lblLoginVcId: 'Your Existing VC ID:',
+      lblLoginUserName: 'Your Name:',
+      btnSubmitVcLoginText: 'Log In to Account',
+      linkBackToCreateAccount: 'New User? Create Account & Get VC ID',
       vcOtpTitle: 'Verify Email',
       vcOtpHeroHeading: 'Enter 8-Digit OTP',
       lblVcOtp: 'Enter 8-Digit Code:',
@@ -290,6 +328,14 @@ function initVoiceClockApp() {
       navSendReminderText: 'Send Reminder',
       navSentRemindersText: 'Sent Reminders',
       navReceivedRemindersText: 'Received Reminders',
+      navTrustedVcText: 'Trusted VC IDs',
+      trustedVcHeading: 'Trusted VC IDs',
+      trustedVcSub: 'Add VC IDs of your loved ones and trusted contacts. Reminders from them will be automatically accepted and scheduled in your Tasks without manual approval.',
+      lblAddTrustedVcId: 'Trusted VC ID:',
+      lblTrustedVcName: 'Name / Relationship (Optional):',
+      btnAddTrustedVcText: 'Add to Trusted Contacts',
+      trustedVcGuaranteeDesc: 'Whenever a reminder is sent by any of these trusted contacts, Voice Clock automatically verifies the VC ID, accepts it without prompting for approval, and immediately schedules it in your Tasks.',
+      trustedListHeading: 'Saved Trusted Contacts',
       navMyAccountText: 'My VC Account',
       navNotificationsText: 'Notifications',
       sidebarSyncStatus: 'Real-Time Cloud Sync Active',
@@ -298,6 +344,7 @@ function initVoiceClockApp() {
       lblTargetVcId: 'Recipient VC ID:',
       lblReminderTitle: 'Reminder Message / Task:',
       lblReminderTime: 'Date & Time:',
+      lblFamilyRepeat: 'Repetition Time (Optional):',
       familyRepeatDaysLabel: 'Repeat on Days (Optional):',
       familyVoiceSelectLabel: 'Speak With Voice:',
       btnSendFamilyReminderText: 'Send Reminder',
@@ -506,13 +553,27 @@ function initVoiceClockApp() {
       clearAllNotifsBtn: 'हटाएं',
       settingRemindFamilyLabel: 'परिवार और दोस्तों को याद दिलाएं',
       settingRemindFamilySub: 'दूर रहने वाले प्रियजनों को देखभाल भरे रिमाइंडर भेजें',
+      settingEmailConfigLabel: 'ईमेल सेवा (Brevo API)',
+      settingEmailConfigSub: 'वास्तविक OTP ईमेल भेजने के लिए API की दर्ज करें',
+      emailConfigModalTitle: 'ईमेल सेवा सेटिंग्स',
+      emailConfigModalSub: 'प्रामाणिक OTP वितरण हेतु Brevo (Sendinblue) REST API',
+      lblBrevoApiKey: 'Brevo API Key (xkeysib-...):',
+      lblBrevoSenderEmail: 'प्रेषक ईमेल (Brevo में सत्यापित):',
+      lblBrevoSenderName: 'प्रेषक का नाम:',
+      btnOpenEmailConfig: '⚙ ईमेल सेवा सेटिंग्स (Brevo)',
+      otpStatusHeading: 'OTP ईमेल पर भेजा गया',
+      otpStatusDesc: '8-अंकीय सत्यापन कोड के लिए अपना इनबॉक्स और स्पैम फ़ोल्डर देखें।',
       vcCreateTitle: 'VC खाता बनाएं',
       familyHeroHeading: 'परिवार से हमेशा जुड़े रहें',
       familyHeroDesc: 'माता-पिता को दवा लेने, बच्चों को खाना खाने याद दिलाएं या दुनिया में कहीं भी दोस्तों के लिए कार्य निर्धारित करें।',
       lblVcName: 'आपका नाम:',
       lblVcEmail: 'ईमेल पता (सत्यापन के लिए):',
       btnCreateVcAccountText: 'खाता बनाएं और OTP भेजें',
-      linkLoginVcAccount: 'पहले से VC ID है? खाता पुनर्स्थापित करें',
+      linkLoginVcAccount: 'पहले से VC ID है? खाते में लॉग इन करें',
+      lblLoginVcId: 'आपकी मौजूदा VC ID:',
+      lblLoginUserName: 'आपका नाम:',
+      btnSubmitVcLoginText: 'खाते में लॉग इन करें',
+      linkBackToCreateAccount: 'नया खाता बनाएं और VC ID प्राप्त करें',
       vcOtpTitle: 'ईमेल सत्यापित करें',
       vcOtpHeroHeading: '8-अंकीय OTP दर्ज करें',
       lblVcOtp: '8-अंकीय कोड दर्ज करें:',
@@ -522,6 +583,14 @@ function initVoiceClockApp() {
       navSendReminderText: 'रिमाइंडर भेजें',
       navSentRemindersText: 'भेजे गए रिमाइंडर',
       navReceivedRemindersText: 'प्राप्त रिमाइंडर',
+      navTrustedVcText: 'विश्वसनीय VC ID',
+      trustedVcHeading: 'विश्वसनीय VC ID',
+      trustedVcSub: 'अपने प्रियजनों और विश्वसनीय संपर्कों की VC ID जोड़ें। उनके द्वारा भेजे गए रिमाइंडर बिना अनुमति पूछे स्वतः टास्क में जुड़ जाएंगे।',
+      lblAddTrustedVcId: 'विश्वसनीय VC ID:',
+      lblTrustedVcName: 'नाम / संबंध (वैकल्पिक):',
+      btnAddTrustedVcText: 'विश्वसनीय संपर्क में जोड़ें',
+      trustedVcGuaranteeDesc: 'इन विश्वसनीय संपर्कों से आने वाले रिमाइंडर बिना किसी मैन्युअल पुष्टि के स्वतः स्वीकार होकर आपके टास्क में जुड़ जाएंगे।',
+      trustedListHeading: 'सहेजे गए विश्वसनीय संपर्क',
       navMyAccountText: 'मेरा VC खाता',
       navNotificationsText: 'सूचनाएं',
       sidebarSyncStatus: 'रियल-टाइम क्लाउड सिंक सक्रिय है',
@@ -530,6 +599,7 @@ function initVoiceClockApp() {
       lblTargetVcId: 'प्राप्तकर्ता का VC ID:',
       lblReminderTitle: 'रिमाइंडर संदेश / कार्य:',
       lblReminderTime: 'दिनांक और समय:',
+      lblFamilyRepeat: 'दोहराने का समय (वैकल्पिक):',
       familyRepeatDaysLabel: 'दोहराने के दिन (वैकल्पिक):',
       familyVoiceSelectLabel: 'इस आवाज़ में बुलवाएं:',
       btnSendFamilyReminderText: 'रिमाइंडर भेजें',
@@ -716,17 +786,41 @@ function initVoiceClockApp() {
     const dayLabelsHi = ['र', 'सो', 'मं', 'बु', 'गु', 'शु', 'श'];
     const labels = isHi ? dayLabelsHi : dayLabelsEn;
 
-    ['alarmDayPills', 'editAlarmDayPills', 'taskDayPills', 'editTaskDayPills'].forEach(containerId => {
+    ['alarmDayPills', 'editAlarmDayPills', 'taskDayPills', 'editTaskDayPills', 'familyDayPills'].forEach(containerId => {
       const container = $(containerId);
       if (container) {
         const pills = container.querySelectorAll('.day-pill');
-        pills.forEach((p, idx) => {
-          if (labels[idx]) p.textContent = labels[idx];
+        pills.forEach((p) => {
+          const dayNum = parseInt(p.dataset.day, 10);
+          if (!isNaN(dayNum) && labels[dayNum]) p.textContent = labels[dayNum];
         });
         if (typeof updateDayPillHint === 'function') {
           updateDayPillHint(containerId);
         }
       }
+    });
+  }
+
+  function applyStartWeekOnDayPills() {
+    const startWeek = (userSettings && userSettings.startWeek) ? userSettings.startWeek : 'Sunday';
+    let order = [0, 1, 2, 3, 4, 5, 6];
+    if (startWeek === 'Monday') {
+      order = [1, 2, 3, 4, 5, 6, 0];
+    } else if (startWeek === 'Saturday') {
+      order = [6, 0, 1, 2, 3, 4, 5];
+    }
+
+    ['alarmDayPills', 'editAlarmDayPills', 'taskDayPills', 'editTaskDayPills', 'familyDayPills'].forEach(containerId => {
+      const container = $(containerId);
+      if (!container) return;
+      const pills = Array.from(container.querySelectorAll('.day-pill'));
+      if (pills.length === 0) return;
+      order.forEach(dayIndex => {
+        const pill = pills.find(p => parseInt(p.dataset.day, 10) === dayIndex);
+        if (pill) {
+          container.appendChild(pill);
+        }
+      });
     });
   }
 
@@ -779,6 +873,16 @@ function initVoiceClockApp() {
       'clearAllNotifsBtn',
       'settingRemindFamilyLabel',
       'settingRemindFamilySub',
+      'settingEmailConfigLabel',
+      'settingEmailConfigSub',
+      'emailConfigModalTitle',
+      'emailConfigModalSub',
+      'lblBrevoApiKey',
+      'lblBrevoSenderEmail',
+      'lblBrevoSenderName',
+      'btnOpenEmailConfig',
+      'otpStatusHeading',
+      'otpStatusDesc',
       'vcCreateTitle',
       'familyHeroHeading',
       'familyHeroDesc',
@@ -786,6 +890,10 @@ function initVoiceClockApp() {
       'lblVcEmail',
       'btnCreateVcAccountText',
       'linkLoginVcAccount',
+      'lblLoginVcId',
+      'lblLoginUserName',
+      'btnSubmitVcLoginText',
+      'linkBackToCreateAccount',
       'vcOtpTitle',
       'vcOtpHeroHeading',
       'lblVcOtp',
@@ -795,6 +903,14 @@ function initVoiceClockApp() {
       'navSendReminderText',
       'navSentRemindersText',
       'navReceivedRemindersText',
+      'navTrustedVcText',
+      'trustedVcHeading',
+      'trustedVcSub',
+      'lblAddTrustedVcId',
+      'lblTrustedVcName',
+      'btnAddTrustedVcText',
+      'trustedVcGuaranteeDesc',
+      'trustedListHeading',
       'navMyAccountText',
       'navNotificationsText',
       'sidebarSyncStatus',
@@ -803,6 +919,7 @@ function initVoiceClockApp() {
       'lblTargetVcId',
       'lblReminderTitle',
       'lblReminderTime',
+      'lblFamilyRepeat',
       'familyRepeatDaysLabel',
       'familyVoiceSelectLabel',
       'btnSendFamilyReminderText',
@@ -1050,12 +1167,12 @@ function initVoiceClockApp() {
            <p><strong>2. स्थानीय पहचान:</strong> सभी वॉयस निर्देश सीधे आपके डिवाइस पर संसाधित होते हैं।</p>
            <p><strong>3. स्थान गोपनीयता:</strong> समय क्षेत्र के लिए लिया गया स्थान केवल स्थानीय मेमोरी में उपयोग होता है और तुरंत हटा दिया जाता है।</p>
            <p><strong>4. बैटरी बचत:</strong> स्क्रीन बंद होते ही माइक्रोफ़ोन स्वतः निष्क्रिय हो जाता है।</p>
-           <p><strong>5. निर्माता:</strong> आयुष कुमार सिंह (2026)।</p>`
+           <p><strong>5. निर्माता:</strong> <span class="owner-secret-tap">आयुष कुमार सिंह</span> (2026)।</p>`
         : `<p><strong>1. Zero Voice Recording Retention:</strong> Voice Clock does not record or store your voice audio on disk or upload it to any third-party cloud.</p>
            <p><strong>2. Local Speech Recognition:</strong> Voice commands are analyzed directly on your device using native speech recognizers.</p>
            <p><strong>3. Location Privacy:</strong> When automatic time zone detection is enabled, geolocation coordinates are used strictly in local memory to match timezone offsets and are discarded immediately.</p>
            <p><strong>4. Battery Efficiency:</strong> Voice Clock automatically shuts down microphone listeners when your device screen turns off, saving battery.</p>
-           <p><strong>5. Created By:</strong> Ayush Kumar Singh (2026).</p>`;
+           <p><strong>5. Created By:</strong> <span class="owner-secret-tap">Ayush Kumar Singh</span> (2026).</p>`;
     }
 
     updateDayPillsLanguage(isHi);
@@ -1610,6 +1727,7 @@ function initVoiceClockApp() {
       const v = userSettings.volumeButtonsAction || 'Remind me later';
       const volMapHi = {
         'Remind me later': 'बाद में याद दिलाएं',
+        'Dismiss': 'बंद करें',
         'Control volume': 'आवाज़ नियंत्रित करें',
         'Do nothing': 'कुछ न करें'
       };
@@ -1619,6 +1737,7 @@ function initVoiceClockApp() {
       const p = userSettings.powerButtonAction || 'Dismiss';
       const pwrMapHi = {
         'Dismiss': 'बंद करें',
+        'Remind me later': 'बाद में याद दिलाएं',
         'Do nothing': 'कुछ न करें'
       };
       $('settingPowerButtonActionSub').textContent = isHi ? (pwrMapHi[p] || p) : p;
@@ -1652,6 +1771,7 @@ function initVoiceClockApp() {
   }
   applySettingDisplays();
   applyAppLanguage(userSettings.appLanguage || 'en');
+  applyStartWeekOnDayPills();
 
   // -------------------- SETTING INTERACTIVE OPTION SHEETS --------------------
   // App Language Option Bar
@@ -1782,10 +1902,12 @@ function initVoiceClockApp() {
       subtitle: isHi ? 'अलार्म बजते समय वॉल्यूम बटन दबाने पर क्रिया' : 'Action when volume buttons are pressed while ringing',
       options: isHi ? [
         { label: 'बाद में याद दिलाएं', value: 'Remind me later', sub: 'अलार्म को स्नूज़ करता है' },
+        { label: 'बंद करें', value: 'Dismiss', sub: 'अलार्म को पूरी तरह बंद कर देता है' },
         { label: 'आवाज़ नियंत्रित करें', value: 'Control volume', sub: 'आवाज़ कम या ज्यादा करें' },
         { label: 'कुछ न करें', value: 'Do nothing', sub: 'बटन दबाने पर कुछ नहीं होगा' }
       ] : [
         { label: 'Remind me later', value: 'Remind me later', sub: 'Snoozes the ringing alarm' },
+        { label: 'Dismiss', value: 'Dismiss', sub: 'Turns off the ringing alarm' },
         { label: 'Control volume', value: 'Control volume', sub: 'Adjusts alarm sound volume' },
         { label: 'Do nothing', value: 'Do nothing', sub: 'Ignores volume button presses' }
       ],
@@ -1795,7 +1917,7 @@ function initVoiceClockApp() {
         saveSettings();
         applySettingDisplays();
         syncNativeHardwareSettings();
-        const displayVal = isHi ? ({ 'Remind me later': 'बाद में याद दिलाएं', 'Control volume': 'आवाज़ नियंत्रित करें', 'Do nothing': 'कुछ न करें' }[val] || val) : val;
+        const displayVal = isHi ? ({ 'Remind me later': 'बाद में याद दिलाएं', 'Dismiss': 'बंद करें', 'Control volume': 'आवाज़ नियंत्रित करें', 'Do nothing': 'कुछ न करें' }[val] || val) : val;
         showPopup(isHi ? `वॉल्यूम बटन: ${displayVal}` : `Volume buttons: ${val}`);
       }
     });
@@ -1809,9 +1931,11 @@ function initVoiceClockApp() {
       subtitle: isHi ? 'अलार्म बजते समय पावर बटन दबाने पर क्रिया' : 'Action when power button is pressed while ringing',
       options: isHi ? [
         { label: 'बंद करें', value: 'Dismiss', sub: 'अलार्म को पूरी तरह बंद कर देता है' },
+        { label: 'बाद में याद दिलाएं', value: 'Remind me later', sub: 'अलार्म को स्नूज़ करता है' },
         { label: 'कुछ न करें', value: 'Do nothing', sub: 'अलार्म बजता रहेगा' }
       ] : [
         { label: 'Dismiss', value: 'Dismiss', sub: 'Turns off the ringing alarm' },
+        { label: 'Remind me later', value: 'Remind me later', sub: 'Snoozes the ringing alarm' },
         { label: 'Do nothing', value: 'Do nothing', sub: 'Keeps alarm ringing' }
       ],
       currentValue: userSettings.powerButtonAction || 'Dismiss',
@@ -1820,7 +1944,7 @@ function initVoiceClockApp() {
         saveSettings();
         applySettingDisplays();
         syncNativeHardwareSettings();
-        const displayVal = isHi ? ({ 'Dismiss': 'बंद करें', 'Do nothing': 'कुछ न करें' }[val] || val) : val;
+        const displayVal = isHi ? ({ 'Dismiss': 'बंद करें', 'Remind me later': 'बाद में याद दिलाएं', 'Do nothing': 'कुछ न करें' }[val] || val) : val;
         showPopup(isHi ? `पावर बटन: ${displayVal}` : `Power button: ${val}`);
       }
     });
@@ -1852,6 +1976,7 @@ function initVoiceClockApp() {
         userSettings.startWeek = val;
         saveSettings();
         applySettingDisplays();
+        applyStartWeekOnDayPills();
         const displayVal = isHi ? ({ 'Sunday': 'रविवार', 'Monday': 'सोमवार', 'Saturday': 'शनिवार' }[val] || val) : val;
         showPopup(isHi ? `सप्ताह का पहला दिन: ${displayVal}` : `Start week on: ${val}`);
       }
@@ -2838,17 +2963,26 @@ function initVoiceClockApp() {
       stopAllTTS();
 
       const selectedLang = $('voiceLangSelect')?.value || (userSettings.appLanguage === 'hi' ? "hi-IN" : "en-US");
-      const isHindiText = /[\u0900-\u097F]/.test(text) || selectedLang.startsWith("hi");
+      const isHindiText = /[\u0900-\u097F]/.test(text) || (selectedLang && selectedLang.startsWith("hi")) || /\b(baje|lagao|karo|yaad|hai|hain|chup|rok|band|samay)\b/i.test(text);
       const speakLang = isHindiText ? "hi-IN" : (lang || "en-US");
-      const activeVoiceId = voiceId || "female_1";
+      const activeVoiceId = voiceId || (isHindiText ? "female_in" : "female_1");
+
+      if (window.AndroidVoice && typeof window.AndroidVoice.pauseListeningForTTSNative === 'function') {
+        try { window.AndroidVoice.pauseListeningForTTSNative(); } catch (e) {}
+      }
 
       // 1. Android Native TTS (Single source of truth on Android - matches AlarmService)
       if (window.AndroidVoice && typeof window.AndroidVoice.playNativeTTS === 'function') {
         try {
           window.AndroidVoice.playNativeTTS(text, activeVoiceId, speakLang);
           const words = text.trim().split(/\s+/).length;
-          const durationMs = Math.max(1600, Math.min(10000, words * 380));
-          setTimeout(resolve, durationMs);
+          const durationMs = Math.max(1800, Math.min(12000, words * 420 + 800));
+          setTimeout(() => {
+            if (window.AndroidVoice && typeof window.AndroidVoice.resumeListeningAfterTTSNative === 'function') {
+              try { window.AndroidVoice.resumeListeningAfterTTSNative(); } catch (e) {}
+            }
+            resolve();
+          }, durationMs);
           return;
         } catch (e) {
           console.log("playNativeTTS error:", e);
@@ -2856,7 +2990,12 @@ function initVoiceClockApp() {
       }
 
       // 2. Web Speech API fallback with precise voice, pitch, and rate
-      fallbackWebSpeech(text, speakLang, activeVoiceId, resolve);
+      fallbackWebSpeech(text, speakLang, activeVoiceId, () => {
+        if (window.AndroidVoice && typeof window.AndroidVoice.resumeListeningAfterTTSNative === 'function') {
+          try { window.AndroidVoice.resumeListeningAfterTTSNative(); } catch (e) {}
+        }
+        resolve();
+      });
     });
   }
 
@@ -2874,7 +3013,7 @@ function initVoiceClockApp() {
       const voiceCfg = (typeof VOICE_OPTIONS !== 'undefined' ? VOICE_OPTIONS.find(v => v.id === voiceId) : null) || { pitch: 1.0, rate: 1.0, gender: 'female' };
       utterance.pitch = voiceCfg.pitch || 1.0;
       utterance.rate = voiceCfg.rate || 1.0;
-      utterance.volume = 1.0;
+      utterance.volume = Math.max(0.01, (userSettings.alarmVolume !== undefined ? userSettings.alarmVolume : 80) / 100);
 
       // Match system browser voice by gender and language if available
       const voices = window.speechSynthesis.getVoices();
@@ -3169,7 +3308,40 @@ function initVoiceClockApp() {
   });
 
   // -------------------- ALARMS STATE & LOGIC --------------------
+  let vcDeletedIds = [];
+  try {
+    vcDeletedIds = JSON.parse(localStorage.getItem("vc_deleted_ids") || "[]");
+    if (!Array.isArray(vcDeletedIds)) vcDeletedIds = [];
+  } catch (e) {
+    vcDeletedIds = [];
+  }
+
+  function markIdAsPermanentlyDeleted(id) {
+    if (!id) return;
+    try {
+      let list = JSON.parse(localStorage.getItem("vc_deleted_ids") || "[]");
+      if (!Array.isArray(list)) list = [];
+      if (!list.includes(id)) {
+        list.push(id);
+        if (list.length > 300) list.shift();
+        localStorage.setItem("vc_deleted_ids", JSON.stringify(list));
+      }
+    } catch (e) {}
+  }
+
+  function unmarkIdAsDeleted(id) {
+    if (!id) return;
+    try {
+      let list = JSON.parse(localStorage.getItem("vc_deleted_ids") || "[]");
+      if (Array.isArray(list)) {
+        list = list.filter(x => x !== id);
+        localStorage.setItem("vc_deleted_ids", JSON.stringify(list));
+      }
+    } catch (e) {}
+  }
+
   let alarms = JSON.parse(localStorage.getItem("alarms")) || [];
+  alarms = alarms.filter(a => a && a.id && !vcDeletedIds.includes(a.id));
   alarms.forEach(a => {
     a.time = new Date(a.time);
     if (isNaN(a.time.getTime())) a.time = new Date();
@@ -3178,7 +3350,37 @@ function initVoiceClockApp() {
   });
 
   function saveAlarms() {
+    alarms.forEach(a => { if (a && a.id) unmarkIdAsDeleted(a.id); });
     localStorage.setItem("alarms", JSON.stringify(alarms));
+  }
+
+  function permanentlyDeleteAlarmItem(id) {
+    if (!id) return;
+    stopAlarmAudio(id);
+    const al = alarms.find(a => a.id === id);
+    if (al && al.loopTimeout) {
+      clearTimeout(al.loopTimeout);
+      al.loopTimeout = null;
+    }
+    if (currentActiveAlarmId === id) {
+      currentActiveAlarmId = null;
+      alarmModal?.classList.remove('show');
+    }
+    markIdAsPermanentlyDeleted(id);
+    if (window.AndroidVoice) {
+      if (window.AndroidVoice.stopAlarmService) {
+        window.AndroidVoice.stopAlarmService();
+      }
+      if (window.AndroidVoice.cancelAlarm) {
+        window.AndroidVoice.cancelAlarm(id);
+      }
+      if (window.AndroidVoice.syncAlarmDismiss) {
+        window.AndroidVoice.syncAlarmDismiss(id);
+      }
+    }
+    alarms = alarms.filter(a => a.id !== id);
+    saveAlarms();
+    renderAlarms();
   }
 
   const alarmsList = $('alarmsList');
@@ -3293,7 +3495,8 @@ function initVoiceClockApp() {
         al.label,
         al.mode,
         al.ttsText,
-        al.voice
+        al.voice,
+        al.intervalMs || 0
       );
     }
 
@@ -3444,7 +3647,7 @@ function initVoiceClockApp() {
             al.time = next;
           }
           if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
-            window.AndroidVoice.scheduleAlarm(al.id, al.time.getTime(), al.label, al.mode, al.ttsText, al.voice || 'female_1');
+            window.AndroidVoice.scheduleAlarm(al.id, al.time.getTime(), al.label, al.mode, al.ttsText, al.voice || 'female_1', al.intervalMs || 0);
           }
         }
         saveAlarms();
@@ -3456,23 +3659,8 @@ function initVoiceClockApp() {
     alarmsList.querySelectorAll('.alarm-delete-btn').forEach(btn => {
       btn.onclick = () => {
         const id = btn.dataset.id;
-        stopAlarmAudio(id);
-
-        if (window.AndroidVoice && window.AndroidVoice.stopAlarmService) {
-          window.AndroidVoice.stopAlarmService();
-        }
-        if (window.AndroidVoice && window.AndroidVoice.cancelAlarm) {
-          window.AndroidVoice.cancelAlarm(id);
-        }
-        if (currentActiveAlarmId === id) {
-          currentActiveAlarmId = null;
-          alarmModal?.classList.remove('show');
-        }
-
         const deleted = alarms.find(a => a.id === id);
-        alarms = alarms.filter(a => a.id !== id);
-        saveAlarms();
-        renderAlarms();
+        permanentlyDeleteAlarmItem(id);
 
         if (deleted) {
           const isHi = userSettings.appLanguage === 'hi';
@@ -3575,22 +3763,9 @@ function initVoiceClockApp() {
   $('deleteEditAlarmBtn')?.addEventListener('click', () => {
     if (!currentEditingAlarmId) return;
     const id = currentEditingAlarmId;
-    stopAlarmAudio(id);
-    if (window.AndroidVoice && window.AndroidVoice.stopAlarmService) {
-      window.AndroidVoice.stopAlarmService();
-    }
-    if (window.AndroidVoice && window.AndroidVoice.cancelAlarm) {
-      window.AndroidVoice.cancelAlarm(id);
-    }
-    if (currentActiveAlarmId === id) {
-      currentActiveAlarmId = null;
-      alarmModal?.classList.remove('show');
-    }
-    alarms = alarms.filter(a => a.id !== id);
-    saveAlarms();
+    permanentlyDeleteAlarmItem(id);
     $('alarmEditView')?.classList.add('hidden');
     $('alarmListView')?.classList.remove('hidden');
-    renderAlarms();
     currentEditingAlarmId = null;
     const isHi = userSettings.appLanguage === 'hi';
     showPopup(isHi ? 'अलार्म हटा दिया गया' : 'Alarm deleted', 'deleted');
@@ -3675,7 +3850,8 @@ function initVoiceClockApp() {
         al.label,
         al.mode,
         al.ttsText,
-        al.voice
+        al.voice,
+        al.intervalMs || 0
       );
     }
 
@@ -3686,7 +3862,43 @@ function initVoiceClockApp() {
     showPopup(isHi ? 'अलार्म अपडेट कर दिया गया' : 'Alarm updated');
   });
 
+  let inAppAutoSilenceTimer = null;
+  function scheduleInAppAutoSilence(type, id) {
+    if (inAppAutoSilenceTimer) {
+      clearTimeout(inAppAutoSilenceTimer);
+      inAppAutoSilenceTimer = null;
+    }
+    const val = (userSettings && userSettings.silenceAfter) ? userSettings.silenceAfter : '1 minute';
+    if (val === 'Never') return;
+    const mins = parseInt(val, 10) || 1;
+    inAppAutoSilenceTimer = setTimeout(() => {
+      console.log(`[AutoSilence] In-app auto silence triggered after ${mins} min(s)`);
+      if (type === 'task') {
+        if (typeof dismissTaskById === 'function') dismissTaskById(id);
+      } else {
+        if (typeof dismissAlarmById === 'function') dismissAlarmById(id);
+      }
+    }, mins * 60 * 1000);
+  }
+
+  function clearInAppAutoSilence() {
+    if (inAppAutoSilenceTimer) {
+      clearTimeout(inAppAutoSilenceTimer);
+      inAppAutoSilenceTimer = null;
+    }
+  }
+
   function startAlarm(al) {
+    if (!al) return;
+    let deletedIds = [];
+    try {
+      deletedIds = JSON.parse(localStorage.getItem("vc_deleted_ids") || "[]");
+    } catch (e) {}
+    if (deletedIds.includes(al.id) || !alarms.some(a => a.id === al.id)) {
+      console.warn("startAlarm: Alarm " + al.id + " was deleted. Canceling.");
+      permanentlyDeleteAlarmItem(al.id);
+      return;
+    }
     if (al.enabled === false) return;
     if (al.ringing) return;
     if (al.snoozedUntil) {
@@ -3697,6 +3909,8 @@ function initVoiceClockApp() {
 
     al.ringing = true;
     currentActiveAlarmId = al.id;
+
+    scheduleInAppAutoSilence('alarm', al.id);
 
     if (window.AndroidVoice && window.AndroidVoice.setAlarmRinging) {
       window.AndroidVoice.setAlarmRinging(true);
@@ -3710,6 +3924,14 @@ function initVoiceClockApp() {
     }
 
     const isHi = userSettings.appLanguage === 'hi';
+    const snoozeMins = (al.intervalMs && al.intervalMs > 0)
+      ? Math.max(1, Math.round(al.intervalMs / 60000))
+      : (parseInt(userSettings.snoozeDuration || '10', 10) || 10);
+    const alarmSwipeHint = $('alarmSwipeHintLeft');
+    if (alarmSwipeHint) {
+      alarmSwipeHint.textContent = isHi ? `◂ स्नूज़ (${snoozeMins} मिनट)` : `◂ Slide to Snooze (${snoozeMins}m)`;
+    }
+
     if (modalLabel) modalLabel.textContent = al.label || (isHi ? 'अलार्म' : 'Alarm');
     if (modalTime) modalTime.textContent = formatAlarmTimeString(al.time);
     if (modalMessage) {
@@ -3725,25 +3947,31 @@ function initVoiceClockApp() {
     alarmModal?.classList.add('show');
     showPopup(isHi ? `⏰ अलार्म: ${al.label}` : `⏰ Alarm: ${al.label}`);
 
-    if (window.AndroidVoice) {
-      // AlarmService handles all audio, vibration, and TTS natively with the single selected voice!
-      // Do not run parallel WebView WebSpeech loop to eliminate conflicting dual voices.
-    } else {
-      if (al.mode === 'upload' && al.audioData) {
-        al.audioObj = playAudioFile(al.audioData);
-      } else {
-        const loopTTS = async () => {
-          if (!al.ringing || currentActiveAlarmId !== al.id) return;
-          await playTTS(al.ttsText || al.label || 'Alarm', 'en-US', al.voice || 'female_1');
-          if (!al.ringing || currentActiveAlarmId !== al.id) return;
-          al.loopTimeout = setTimeout(loopTTS, 1500);
-        };
-        loopTTS();
-      }
+    if (al.mode === 'upload' && al.audioData) {
+      al.audioObj = playAudioFile(al.audioData);
+    }
+
+    if (window.AndroidVoice && window.AndroidVoice.startAlarmServiceNative) {
+      window.AndroidVoice.startAlarmServiceNative(
+        al.id,
+        al.label || '',
+        al.mode || 'tts',
+        al.ttsText || al.label || '',
+        al.voice || 'female_1'
+      );
+    } else if (!window.AndroidVoice && al.mode !== 'upload') {
+      const loopTTS = async () => {
+        if (!al.ringing || currentActiveAlarmId !== al.id) return;
+        await playTTS(al.ttsText || al.label || 'Alarm', 'en-US', al.voice || 'female_1');
+        if (!al.ringing || currentActiveAlarmId !== al.id) return;
+        al.loopTimeout = setTimeout(loopTTS, 1500);
+      };
+      loopTTS();
     }
   }
 
   function stopAlarmAudio(id) {
+    clearInAppAutoSilence();
     stopAllTTS();
 
     if (window.AndroidVoice) {
@@ -3909,7 +4137,9 @@ function initVoiceClockApp() {
       window.AndroidVoice.cancelAlarm(alarmId);
     }
 
-    const snoozeMins = parseInt(userSettings.snoozeDuration || '10', 10) || 10;
+    const snoozeMins = (al.intervalMs && al.intervalMs > 0)
+      ? Math.max(1, Math.round(al.intervalMs / 60000))
+      : (parseInt(userSettings.snoozeDuration || '10', 10) || 10);
     const snoozeTime = Date.now() + (snoozeMins * 60 * 1000);
     al.ringing = false;
     al.snoozedUntil = snoozeTime;
@@ -3923,7 +4153,8 @@ function initVoiceClockApp() {
         al.label,
         al.mode,
         al.ttsText,
-        al.voice || 'female_1'
+        al.voice || 'female_1',
+        al.intervalMs || 0
       );
     }
     if (window.AndroidVoice && window.AndroidVoice.syncAlarmSnooze) {
@@ -3983,12 +4214,12 @@ function initVoiceClockApp() {
         advanceAlarmToNextRepeatDay(al);
       }
       if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
-        window.AndroidVoice.scheduleAlarm(al.id, al.time.getTime(), al.label, al.mode, al.ttsText, al.voice || 'female_1');
+        window.AndroidVoice.scheduleAlarm(al.id, al.time.getTime(), al.label, al.mode, al.ttsText, al.voice || 'female_1', al.intervalMs || 0);
       }
     } else if (hasDays) {
       advanceAlarmToNextRepeatDay(al);
       if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
-        window.AndroidVoice.scheduleAlarm(al.id, al.time.getTime(), al.label, al.mode, al.ttsText, al.voice || 'female_1');
+        window.AndroidVoice.scheduleAlarm(al.id, al.time.getTime(), al.label, al.mode, al.ttsText, al.voice || 'female_1', al.intervalMs || 0);
       }
     } else if (hasInterval) {
       let interval = 60000;
@@ -4011,7 +4242,7 @@ function initVoiceClockApp() {
       al.time = nextTime;
       al.enabled = true;
       if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
-        window.AndroidVoice.scheduleAlarm(al.id, al.time.getTime(), al.label, al.mode, al.ttsText, al.voice || 'female_1');
+        window.AndroidVoice.scheduleAlarm(al.id, al.time.getTime(), al.label, al.mode, al.ttsText, al.voice || 'female_1', al.intervalMs || 0);
       }
     } else {
       al.enabled = false;
@@ -4051,8 +4282,9 @@ function initVoiceClockApp() {
 
   // In-app check interval for alarms
   setInterval(() => {
-    const now = Date.now();
-    const currentDay = new Date().getDay();
+    const effectiveNow = getEffectiveNow();
+    const now = effectiveNow.getTime();
+    const currentDay = effectiveNow.getDay();
     alarms.forEach(al => {
       if (al.enabled === false || al.ringing) return;
       const isDue = al.snoozedUntil ? (now >= al.snoozedUntil) : (new Date(al.time).getTime() <= now);
@@ -4068,10 +4300,11 @@ function initVoiceClockApp() {
         startAlarm(al);
       }
     });
-  }, 1000);
+  }, 200);
 
   // -------------------- TASKS STATE & LOGIC --------------------
   let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+  tasks = tasks.filter(t => t && t.id && !vcDeletedIds.includes(t.id));
   tasks.forEach(t => {
     t.time = new Date(t.time);
     if (isNaN(t.time.getTime())) t.time = new Date();
@@ -4080,7 +4313,37 @@ function initVoiceClockApp() {
   });
 
   function saveTasks() {
+    tasks.forEach(t => { if (t && t.id) unmarkIdAsDeleted(t.id); });
     localStorage.setItem("tasks", JSON.stringify(tasks));
+  }
+
+  function permanentlyDeleteTaskItem(id) {
+    if (!id) return;
+    stopTaskAudio(id);
+    const t = tasks.find(x => x.id === id);
+    if (t && t.loopTimeout) {
+      clearTimeout(t.loopTimeout);
+      t.loopTimeout = null;
+    }
+    if (currentActiveTaskId === id) {
+      currentActiveTaskId = null;
+      taskModal?.classList.remove('show');
+    }
+    markIdAsPermanentlyDeleted(id);
+    if (window.AndroidVoice) {
+      if (window.AndroidVoice.stopAlarmService) {
+        window.AndroidVoice.stopAlarmService();
+      }
+      if (window.AndroidVoice.cancelAlarm) {
+        window.AndroidVoice.cancelAlarm(id);
+      }
+      if (window.AndroidVoice.syncAlarmDismiss) {
+        window.AndroidVoice.syncAlarmDismiss(id);
+      }
+    }
+    tasks = tasks.filter(x => x.id !== id);
+    saveTasks();
+    renderTasks();
   }
 
   const tasksList = $('tasksList');
@@ -4167,7 +4430,8 @@ function initVoiceClockApp() {
         task.title,
         'task',
         task.title,
-        task.voice
+        task.voice,
+        task.intervalMs || 0
       );
     }
 
@@ -4267,7 +4531,7 @@ function initVoiceClockApp() {
             t.time = next;
           }
           if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
-            window.AndroidVoice.scheduleAlarm(t.id, t.time.getTime(), t.title, 'task', t.title, t.voice || 'female_1');
+            window.AndroidVoice.scheduleAlarm(t.id, t.time.getTime(), t.title, 'task', t.title, t.voice || 'female_1', t.intervalMs || 0);
           }
         }
         saveTasks();
@@ -4278,26 +4542,8 @@ function initVoiceClockApp() {
     tasksList.querySelectorAll('.alarm-delete-btn').forEach(btn => {
       btn.onclick = () => {
         const id = btn.dataset.id;
-        stopTaskAudio(id);
-
-        if (window.AndroidVoice && window.AndroidVoice.stopAlarmService) {
-          window.AndroidVoice.stopAlarmService();
-        }
-        if (window.AndroidVoice && window.AndroidVoice.cancelAlarm) {
-          window.AndroidVoice.cancelAlarm(id);
-        }
-        if (window.AndroidVoice && window.AndroidVoice.syncAlarmDismiss) {
-          window.AndroidVoice.syncAlarmDismiss(id);
-        }
-        if (currentActiveTaskId === id) {
-          currentActiveTaskId = null;
-          taskModal?.classList.remove('show');
-        }
-
         const deleted = tasks.find(x => x.id === id);
-        tasks = tasks.filter(x => x.id !== id);
-        saveTasks();
-        renderTasks();
+        permanentlyDeleteTaskItem(id);
 
         if (deleted) {
           const isHi = userSettings.appLanguage === 'hi';
@@ -4372,25 +4618,9 @@ function initVoiceClockApp() {
   $('deleteEditTaskBtn')?.addEventListener('click', () => {
     if (!currentEditingTaskId) return;
     const id = currentEditingTaskId;
-    stopTaskAudio(id);
-    if (window.AndroidVoice && window.AndroidVoice.stopAlarmService) {
-      window.AndroidVoice.stopAlarmService();
-    }
-    if (window.AndroidVoice && window.AndroidVoice.cancelAlarm) {
-      window.AndroidVoice.cancelAlarm(id);
-    }
-    if (window.AndroidVoice && window.AndroidVoice.syncAlarmDismiss) {
-      window.AndroidVoice.syncAlarmDismiss(id);
-    }
-    if (currentActiveTaskId === id) {
-      currentActiveTaskId = null;
-      taskModal?.classList.remove('show');
-    }
-    tasks = tasks.filter(x => x.id !== id);
-    saveTasks();
+    permanentlyDeleteTaskItem(id);
     $('taskEditView')?.classList.add('hidden');
     $('taskListView')?.classList.remove('hidden');
-    renderTasks();
     currentEditingTaskId = null;
     const isHi = userSettings.appLanguage === 'hi';
     showPopup(isHi ? 'कार्य हटा दिया गया' : 'Task deleted', 'deleted');
@@ -4462,7 +4692,7 @@ function initVoiceClockApp() {
       window.AndroidVoice.cancelAlarm(t.id);
     }
     if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
-      window.AndroidVoice.scheduleAlarm(t.id, t.time.getTime(), t.title, 'task', t.title, t.voice);
+      window.AndroidVoice.scheduleAlarm(t.id, t.time.getTime(), t.title, 'task', t.title, t.voice, t.intervalMs || 0);
     }
 
     $('taskEditView')?.classList.add('hidden');
@@ -4473,6 +4703,16 @@ function initVoiceClockApp() {
   });
 
   function startTask(t) {
+    if (!t) return;
+    let deletedIds = [];
+    try {
+      deletedIds = JSON.parse(localStorage.getItem("vc_deleted_ids") || "[]");
+    } catch (e) {}
+    if (deletedIds.includes(t.id) || !tasks.some(x => x.id === t.id)) {
+      console.warn("startTask: Task " + t.id + " was deleted. Canceling.");
+      permanentlyDeleteTaskItem(t.id);
+      return;
+    }
     if (t.enabled === false) return;
     if (t.ringing) return;
     if (t.snoozedUntil) {
@@ -4482,6 +4722,8 @@ function initVoiceClockApp() {
     }
     t.ringing = true;
     currentActiveTaskId = t.id;
+
+    scheduleInAppAutoSilence('task', t.id);
 
     if (window.AndroidVoice && window.AndroidVoice.setAlarmRinging) {
       window.AndroidVoice.setAlarmRinging(true);
@@ -4494,17 +4736,30 @@ function initVoiceClockApp() {
       }
     }
 
+    const isHi = userSettings.appLanguage === 'hi';
+    const snoozeMins = (t.intervalMs && t.intervalMs > 0)
+      ? Math.max(1, Math.round(t.intervalMs / 60000))
+      : (parseInt(userSettings.snoozeDuration || '10', 10) || 10);
+    const taskSwipeHint = $('taskSwipeHintLeft');
+    if (taskSwipeHint) {
+      taskSwipeHint.textContent = isHi ? `◂ स्नूज़ (${snoozeMins} मिनट)` : `◂ Slide to Snooze (${snoozeMins}m)`;
+    }
+
     if (taskModalLabel) taskModalLabel.textContent = t.title;
     if (taskModalTime) taskModalTime.textContent = formatAlarmTimeString(t.time);
 
     taskModal?.classList.add('show');
-    const isHi = userSettings.appLanguage === 'hi';
     showPopup(isHi ? `🔔 कार्य: ${t.title}` : `🔔 Task: ${t.title}`);
 
-    if (window.AndroidVoice) {
-      // AlarmService in Android handles all ringing sound and TTS natively with single chosen voice!
-      // Do not run parallel WebView WebSpeech loop.
-    } else {
+    if (window.AndroidVoice && window.AndroidVoice.startAlarmServiceNative) {
+      window.AndroidVoice.startAlarmServiceNative(
+        t.id,
+        t.title || '',
+        'task',
+        t.title || '',
+        t.voice || 'female_1'
+      );
+    } else if (!window.AndroidVoice) {
       const loopFunc = async () => {
         if (!t.ringing || currentActiveTaskId !== t.id) return;
         await playTTS(t.title, 'en-US', t.voice || 'female_1');
@@ -4516,6 +4771,7 @@ function initVoiceClockApp() {
   }
 
   function stopTaskAudio(id) {
+    clearInAppAutoSilence();
     stopAllTTS();
 
     if (window.AndroidVoice) {
@@ -4564,7 +4820,9 @@ function initVoiceClockApp() {
       window.AndroidVoice.cancelAlarm(taskId);
     }
 
-    const snoozeMins = parseInt(userSettings.snoozeDuration || '10', 10) || 10;
+    const snoozeMins = (t.intervalMs && t.intervalMs > 0)
+      ? Math.max(1, Math.round(t.intervalMs / 60000))
+      : (parseInt(userSettings.snoozeDuration || '10', 10) || 10);
     const snoozeTime = Date.now() + (snoozeMins * 60 * 1000);
     t.ringing = false;
     t.snoozedUntil = snoozeTime;
@@ -4572,7 +4830,7 @@ function initVoiceClockApp() {
     saveTasks();
 
     if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
-      window.AndroidVoice.scheduleAlarm(t.id, snoozeTime, t.title, 'task', t.title, t.voice || 'female_1');
+      window.AndroidVoice.scheduleAlarm(t.id, snoozeTime, t.title, 'task', t.title, t.voice || 'female_1', t.intervalMs || 0);
     }
     if (window.AndroidVoice && window.AndroidVoice.syncAlarmSnooze) {
       window.AndroidVoice.syncAlarmSnooze(t.id, snoozeTime);
@@ -4629,12 +4887,12 @@ function initVoiceClockApp() {
         advanceTaskToNextRepeatDay(t);
       }
       if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
-        window.AndroidVoice.scheduleAlarm(t.id, t.time.getTime(), t.title, 'task', t.title, t.voice || 'female_1');
+        window.AndroidVoice.scheduleAlarm(t.id, t.time.getTime(), t.title, 'task', t.title, t.voice || 'female_1', t.intervalMs || 0);
       }
     } else if (hasDays) {
       advanceTaskToNextRepeatDay(t);
       if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
-        window.AndroidVoice.scheduleAlarm(t.id, t.time.getTime(), t.title, 'task', t.title, t.voice || 'female_1');
+        window.AndroidVoice.scheduleAlarm(t.id, t.time.getTime(), t.title, 'task', t.title, t.voice || 'female_1', t.intervalMs || 0);
       }
     } else if (hasInterval) {
       let interval = 60000;
@@ -4655,7 +4913,7 @@ function initVoiceClockApp() {
       t.time = nextTime;
       t.enabled = true;
       if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
-        window.AndroidVoice.scheduleAlarm(t.id, t.time.getTime(), t.title, 'task', t.title, t.voice || 'female_1');
+        window.AndroidVoice.scheduleAlarm(t.id, t.time.getTime(), t.title, 'task', t.title, t.voice || 'female_1', t.intervalMs || 0);
       }
     } else {
       t.enabled = false;
@@ -4695,8 +4953,9 @@ function initVoiceClockApp() {
 
   // In-app check interval for tasks
   setInterval(() => {
-    const now = Date.now();
-    const currentDay = new Date().getDay();
+    const effectiveNow = getEffectiveNow();
+    const now = effectiveNow.getTime();
+    const currentDay = effectiveNow.getDay();
     tasks.forEach(t => {
       if (t.enabled === false || t.ringing) return;
       const isDue = t.snoozedUntil ? (now >= t.snoozedUntil) : (new Date(t.time).getTime() <= now);
@@ -4712,7 +4971,7 @@ function initVoiceClockApp() {
         startTask(t);
       }
     });
-  }, 1000);
+  }, 200);
 
   renderAlarms();
   renderTasks();
@@ -4724,11 +4983,19 @@ function initVoiceClockApp() {
   };
 
   const hindiWordNumbers = {
-    'ek': 1, 'do': 2, 'teen': 3, 'char': 4, 'paanch': 5, 'panch': 5, 'chhah': 6, 'che': 6,
+    'ek': 1, 'do': 2, 'teen': 3, 'char': 4, 'paanch': 5, 'panch': 5, 'chhah': 6, 'che': 6, 'chhe': 6,
     'saat': 7, 'aath': 8, 'nau': 9, 'das': 10, 'gyarah': 11, 'barah': 12,
     'एक': 1, 'दो': 2, 'तीन': 3, 'चार': 4, 'पांच': 5, 'पाँच': 5, 'छह': 6, 'छः': 6,
-    'सात': 7, 'आठ': 8, 'नौ': 9, 'दस': 10, 'ग्यारह': 11, 'बारह': 12
+    'सात': 7, 'आठ': 8, 'नौ': 9, 'दस': 10, 'ग्यारह': 11, 'बारह': 12,
+    'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5, 'six': 6,
+    'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10, 'eleven': 11, 'twelve': 12
   };
+
+  function isHindiInput(text) {
+    if (!text) return false;
+    if (/[\u0900-\u097F]/.test(text)) return true;
+    return /\b(baje|lagao|laga|karo|kar|yaad|dila|dilana|dost|subah|shaam|raat|dopahar|hai|hain|chup|rok|band|kya|samay|thodi|baad|utha|jaga|banao|dawa|khana|dedh|dhai|saadhe|sawa|paune|suno)\b/i.test(text);
+  }
 
   function normalizeText(text) {
     if (!text) return '';
@@ -4737,12 +5004,25 @@ function initVoiceClockApp() {
     return str;
   }
 
+  function parseDurationMinutes(text) {
+    if (!text) return null;
+    const m = text.match(/(\d{1,3})\s*(?:minutes?|mins?|मिनट)/i);
+    if (m) return parseInt(m[1], 10);
+    const hm = text.match(/(\d{1,2})\s*(?:hours?|hrs?|घंटे?|घंटा)/i);
+    if (hm) return parseInt(hm[1], 10) * 60;
+    return null;
+  }
+
   function parseTimeFromText(text) {
     let hour = null;
     let minute = 0;
     let ampm = null;
 
-    const t = text.toLowerCase();
+    if (!text) return null;
+
+    // Remove duration phrases like "for 10 minutes", "10 minute", "5 मिनट" so they don't get confused as hour
+    let t = text.toLowerCase()
+      .replace(/(?:for\s+)?\d{1,3}\s*(?:minutes?|mins?|मिनट|घंटे?|hours?)(?:\s*(?:ke\s*liye|के\s*लिए))?/gi, ' ');
 
     if (/सुबह|morning|subah|\bam\b/i.test(t)) {
       ampm = 'am';
@@ -4750,23 +5030,62 @@ function initVoiceClockApp() {
       ampm = 'pm';
     }
 
-    const colonMatch = t.match(/(\d{1,2})[:.](\d{2})/);
-    if (colonMatch) {
-      hour = parseInt(colonMatch[1], 10);
-      minute = parseInt(colonMatch[2], 10);
-    } else {
-      const numMatch = t.match(/(\d{1,2})\s*(?:बजे|baje|am|pm|o'?clock)?/i);
-      let wordFound = false;
+    // Special colloquial Hindi phrases
+    if (/डेढ़|dedh/i.test(t)) {
+      hour = 1;
+      minute = 30;
+    } else if (/ढाई|dhai/i.test(t)) {
+      hour = 2;
+      minute = 30;
+    }
+
+    if (hour === null) {
+      // 1. Colon format: 7:30
+      const colonMatch = t.match(/(\d{1,2})[:.](\d{2})/);
+      if (colonMatch) {
+        hour = parseInt(colonMatch[1], 10);
+        minute = parseInt(colonMatch[2], 10);
+      }
+    }
+
+    if (hour === null) {
+      // 2. Digit followed by explicit time indicator: 7 बजे, 7 am, 7 o'clock
+      const numWithUnitMatch = t.match(/(\d{1,2})\s*(?:बजे|baje|am|pm|o'?clock)/i);
+      if (numWithUnitMatch) {
+        hour = parseInt(numWithUnitMatch[1], 10);
+      }
+    }
+
+    if (hour === null) {
+      // 3. Word number followed by explicit time indicator: सात बजे, seven am
       for (const [w, val] of Object.entries(hindiWordNumbers)) {
-        const reg = new RegExp(`(?:^|\\s)${w}(?:\\s|$|बजे|baje)`, 'i');
+        const reg = new RegExp(`(?:^|\\s)${w}\\s*(?:बजे|baje|am|pm|o'?clock)`, 'i');
         if (reg.test(t)) {
           hour = val;
-          wordFound = true;
           break;
         }
       }
-      if (!wordFound && numMatch && numMatch[1]) {
-        hour = parseInt(numMatch[1], 10);
+    }
+
+    if (hour === null) {
+      // 4. Standalone digits (e.g. "delete alarm 7")
+      const standaloneDigitMatch = t.match(/(?:^|\s)(\d{1,2})(?:\s|$)/);
+      if (standaloneDigitMatch) {
+        hour = parseInt(standaloneDigitMatch[1], 10);
+      }
+    }
+
+    if (hour === null) {
+      // 5. Standalone word number (ignoring 'दो' or 'do' when part of 'hata do', 'kar do', etc.)
+      for (const [w, val] of Object.entries(hindiWordNumbers)) {
+        if ((w === 'दो' || w === 'do') && /(?:हटा|कर|लगा|रोक|दे|बना|रख|karo?|hatao?|laga|rok|de|bana)\s+(?:दो|do)/i.test(t)) {
+          continue;
+        }
+        const reg = new RegExp(`(?:^|\\s)${w}(?:\\s|$)`, 'i');
+        if (reg.test(t)) {
+          hour = val;
+          break;
+        }
       }
     }
 
@@ -4782,59 +5101,159 @@ function initVoiceClockApp() {
     }
 
     if (hour === null || isNaN(hour)) return null;
-    if (ampm === 'pm' && hour < 12) hour += 12;
-    if (ampm === 'am' && hour === 12) hour = 0;
-
     return { hour, minute, ampm };
   }
 
   function parseCommand(rawCmd) {
+    const isHiInput = isHindiInput(rawCmd);
     let cmd = normalizeText(rawCmd);
-    cmd = cmd.replace(/^hey\s+vc[,\s]*/i, '').replace(/^vc[,\s]*/i, '').trim();
 
-    if (/^(stop|dismiss|cancel|turn\s*off)\b/i.test(cmd) ||
-        /बंद\s*करो|रोक\s*दो|चुप\s*(?:रहो|हो\s*जाओ)?|band\s*karo|chup\b|rok\s*do/i.test(cmd)) {
-      return { type: 'dismiss' };
+    // Strip common wake words and prefixes
+    cmd = cmd
+      .replace(/^hey\s+vc(?:\s+clock)?[,\s]*/i, '')
+      .replace(/^vc(?:\s+clock)?[,\s]*/i, '')
+      .replace(/^voice\s+clock[,\s]*/i, '')
+      .replace(/^ok(?:ay)?\s+vc[,\s]*/i, '')
+      .replace(/^hi\s+vc[,\s]*/i, '')
+      .replace(/^hello\s+vc[,\s]*/i, '')
+      .replace(/^हे\s*वीसी[,\s]*/i, '')
+      .replace(/^नमस्ते\s*वीसी[,\s]*/i, '')
+      .replace(/^ओके\s*वीसी[,\s]*/i, '')
+      .replace(/^सुनो?\s*वीसी[,\s]*/i, '')
+      .replace(/^अरे\s*वीसी[,\s]*/i, '')
+      .trim();
+
+    // 1. Empty or greeting only
+    if (!cmd || /^(hello|hi|hey|नमस्ते|प्रणाम|हे)\b/i.test(cmd)) {
+      return { type: 'greeting', isHindi: isHiInput };
     }
 
-    if (/(?:snooze|स्नूज़|सूनूज़|बाद\s*में)/i.test(cmd)) {
-      return { type: 'snooze' };
+    // 2. Time query
+    if (/^(what\s*time|tell\s*me\s*time|what\s*is\s*the\s*time|what's\s*the\s*time|time\s*please)\b/i.test(cmd) ||
+        /(?:time|समय|टाइम)\s*(?:kya|बताओ|कितना|कहाँ)\b/i.test(cmd) ||
+        /(?:kitne|कितने)\s*बजे\s*(?:hain|हैं|hai|है)\b/i.test(cmd)) {
+      return { type: 'time_query', isHindi: isHiInput };
     }
 
-    const isTask = /remind|task|याद|टास्क|रिमाइंडर|yaad/i.test(cmd);
-    if (isTask) {
-      const timeInfo = parseTimeFromText(cmd);
-      if (timeInfo) {
-        let title = cmd
-          .replace(/remind\s+me\s+to/gi, '')
-          .replace(/remind\s+me\s+at\s+[\d:.]+\s*(?:am|pm)?\s*(?:to)?/gi, '')
-          .replace(/(?:add|create)\s+task/gi, '')
-          .replace(/मुझे/gi, '')
-          .replace(/याद\s*दिलाना|याद\s*दिलाओ|याद\s*दिला|yaad\s*dilana|yaad\s*dila/gi, '')
-          .replace(/का\s*टास्क\s*बनाओ|टास्क\s*ऐड\s*करो|टास्क\s*बनाओ|ka\s*task\s*banao|task\s*add\s*karo|task/gi, '')
-          .replace(/के\s*लिए|ke\s*liye/gi, '')
+    const timeInfo = parseTimeFromText(cmd);
+    const durationMinutes = parseDurationMinutes(cmd);
+    const isAll = /\b(all|every|everything)\b|सारे|सब|सभी|प्रत्येक|saare|sab|sabhi/i.test(cmd);
+    const isExplicitTask = /\b(task|tasks|reminder|reminders)\b|टास्क|रिमाइंडर/i.test(cmd);
+    const isExplicitAlarm = /\b(alarm|alarms)\b|अलार्म/i.test(cmd);
+
+    // 3. Delete intent (High Priority - Never create an alarm or task)
+    const isDelete = /\b(delete|remove|clear|erase|cancel\s+all)\b|डिलीट|हटाओ|हटा\s*दो|हटा\s*देना|हटाना|मिटाओ|मिटा\s*दो|मिटाना|hatao|hata\s*do|mitao|mita\s*do/i.test(cmd);
+    if (isDelete) {
+      let target = 'alarm';
+      if (isExplicitTask && !isExplicitAlarm) {
+        target = 'task';
+      } else if (isAll && !isExplicitAlarm && !isExplicitTask) {
+        target = 'all';
+      }
+
+      let title = null;
+      if (target === 'task') {
+        title = cmd
+          .replace(/\b(delete|remove|clear|erase|cancel)\b/gi, '')
+          .replace(/डिलीट|हटाओ|हटा\s*दो|हटा\s*देना|हटाना|मिटाओ|मिटा\s*दो|मिटाना|hatao|hata\s*do|mitao/gi, '')
+          .replace(/\b(task|tasks|reminder|reminders)\b/gi, '')
+          .replace(/टास्क|रिमाइंडर/gi, '')
+          .replace(/वाला|वाली|वाले|wala|wali|wale/gi, '')
+          .replace(/का|की|के|ka|ki|ke/gi, '')
+          .replace(/को|ko/gi, '')
           .replace(/[\d:.]+\s*(?:am|pm|बजे|baje)/gi, '')
           .trim();
-        if (!title) title = 'Reminder';
-        return { type: 'task', title, hour: timeInfo.hour, minute: timeInfo.minute };
+        if (!title) title = null;
       }
+
+      return {
+        type: 'delete',
+        target,
+        isAll,
+        title,
+        timeInfo,
+        hour: timeInfo ? timeInfo.hour : null,
+        minute: timeInfo ? timeInfo.minute : null,
+        ampm: timeInfo ? timeInfo.ampm : null,
+        isHindi: isHiInput
+      };
     }
 
-    const isAlarm = /alarm|अलार्म|wake\s*me\s*up|उठा\s*देना/i.test(cmd);
-    const timeInfo = parseTimeFromText(cmd);
-    if (timeInfo) {
+    // 4. Dismiss / Stop intent (High Priority - Never create an alarm or task)
+    const isDismiss = /\b(dismiss|stop|turn\s*off|shut\s*up|quiet|silent|disable|off|cancel)\b|बंद\s*करो|बंद\s*कर\s*दो|बंद\s*कर\s*देना|रोक\s*दो|रोक\s*देना|रोक\s*लो|चुप\s*(?:रहो|हो\s*जाओ)?|शांत\s*(?:हो\s*जाओ)?|डिसमिस|ऑफ\s*करो|कैंसिल\s*करो|band\s*karo|band\s*kar\s*do|rok\s*do|rok\s*dena|chup\b|off\s*karo/i.test(cmd);
+    if (isDismiss) {
+      let target = 'alarm';
+      if (isExplicitTask && !isExplicitAlarm) {
+        target = 'task';
+      } else if (isAll && !isExplicitAlarm && !isExplicitTask) {
+        target = 'all';
+      }
+
+      return {
+        type: 'dismiss',
+        target,
+        isAll,
+        timeInfo,
+        hour: timeInfo ? timeInfo.hour : null,
+        minute: timeInfo ? timeInfo.minute : null,
+        ampm: timeInfo ? timeInfo.ampm : null,
+        isHindi: isHiInput
+      };
+    }
+
+    // 5. Snooze intent (High Priority - Never create an alarm or task)
+    const isSnooze = /\b(snooze|remind\s*later|later)\b|स्नूज़|सूनूज़|बाद\s*में|थोड़ी\s*देर\s*बाद|baad\s*me/i.test(cmd);
+    if (isSnooze) {
+      let target = 'alarm';
+      if (isExplicitTask && !isExplicitAlarm) {
+        target = 'task';
+      }
+      return {
+        type: 'snooze',
+        target,
+        durationMinutes,
+        timeInfo,
+        hour: timeInfo ? timeInfo.hour : null,
+        minute: timeInfo ? timeInfo.minute : null,
+        ampm: timeInfo ? timeInfo.ampm : null,
+        isHindi: isHiInput
+      };
+    }
+
+    // 6. Task / Reminder creation (Guarded: only when NOT delete, dismiss, or snooze)
+    const isTask = /remind|task|reminder|याद|टास्क|रिमाइंडर|yaad|dawa|medicine|doodh|milk|dinner|lunch|meeting|padhai|study/i.test(cmd);
+    if (isTask && timeInfo) {
+      let title = cmd
+        .replace(/remind\s+me\s+to/gi, '')
+        .replace(/remind\s+me\s+at\s+[\d:.]+\s*(?:am|pm)?\s*(?:to)?/gi, '')
+        .replace(/(?:add|create)\s+task/gi, '')
+        .replace(/मुझे/gi, '')
+        .replace(/याद\s*दिलाना|याद\s*दिलाओ|याद\s*दिला|याद|yaad\s*dilana|yaad\s*dila|yaad/gi, '')
+        .replace(/का\s*टास्क\s*बनाओ|टास्क\s*ऐड\s*करो|टास्क\s*बनाओ|टास्क|ka\s*task\s*banao|task\s*add\s*karo|task/gi, '')
+        .replace(/के\s*लिए|ke\s*liye|for/gi, '')
+        .replace(/[\d:.]+\s*(?:am|pm|बजे|baje)/gi, '')
+        .replace(/(?:subah|shaam|raat|dopahar|morning|evening|night|afternoon)/gi, '')
+        .trim();
+      if (!title) title = isHiInput ? 'रिमाइंडर' : 'Reminder';
+      return { type: 'task', title, hour: timeInfo.hour, minute: timeInfo.minute, ampm: timeInfo.ampm, isHindi: isHiInput };
+    }
+
+    // 7. Alarm creation (Guarded: only when NOT delete, dismiss, or snooze)
+    const isAlarm = /alarm|अलार्म|wake\s*me\s*up|उठा\s*देना|जगा\s*देना|jaga\s*dena|utha\s*dena|lagao|laga\s*do|set\s*karo/i.test(cmd) || /बजे|baje|am|pm/i.test(cmd);
+    if (timeInfo && isAlarm) {
       let label = cmd
         .replace(/set\s+alarm\s+for/gi, '')
         .replace(/set\s+alarm\s+at/gi, '')
-        .replace(/का\s*अलार्म\s*लगाओ|अलार्म\s*लगाओ|अलार्म\s*सेट\s*करो|अलार्म/gi, '')
+        .replace(/का\s*अलार्म\s*लगाओ|अलार्म\s*लगाओ|अलार्म\s*सेट\s*करो|अलार्म\s*लगा\s*दो|अलार्म/gi, '')
         .replace(/[\d:.]+\s*(?:am|pm|बजे|baje)/gi, '')
         .replace(/के\s*लिए|for/gi, '')
+        .replace(/(?:subah|shaam|raat|dopahar|morning|evening|night|afternoon)/gi, '')
         .trim();
-      if (!label) label = 'Voice Alarm';
-      return { type: 'alarm', label, hour: timeInfo.hour, minute: timeInfo.minute };
+      if (!label) label = isHiInput ? 'अलार्म' : 'Alarm';
+      return { type: 'alarm', label, hour: timeInfo.hour, minute: timeInfo.minute, ampm: timeInfo.ampm, isHindi: isHiInput };
     }
 
-    return { type: 'unknown', raw: cmd };
+    return { type: 'unknown', raw: cmd, isHindi: isHiInput };
   }
 
   // Voice execution
@@ -4845,12 +5264,45 @@ function initVoiceClockApp() {
   const voiceSub = $('voiceSub');
   const voiceLiveTranscript = $('voiceLiveTranscript');
   const closeVoiceOverlayBtn = $('closeVoiceOverlayBtn');
-  const heyVcToggle = $('heyVcToggle');
 
   let activeSpeechRecognition = null;
+  let isVoiceListeningActive = false;
+
+  function updateVoiceButtonUI() {
+    const isHi = userSettings.appLanguage === 'hi';
+    const labelSpan = $('voiceBtnLabel');
+    if (isVoiceListeningActive) {
+      if (labelSpan) labelSpan.textContent = isHi ? 'बोलना बंद करें' : 'Stop Voice';
+      if (voiceBtn) voiceBtn.classList.add('active-listening');
+      if (voiceStatus) {
+        voiceStatus.textContent = isHi 
+          ? 'वॉयस असिस्टेंट सक्रिय है (पृष्ठभूमि में भी सुन रहा है)... कुछ भी बोलें' 
+          : 'Voice Assistant Active (Listening in background)... Speak anytime';
+      }
+    } else {
+      if (labelSpan) labelSpan.textContent = isHi ? 'बोलना शुरू करें' : 'Start Voice';
+      if (voiceBtn) voiceBtn.classList.remove('active-listening');
+      if (voiceStatus) {
+        voiceStatus.textContent = isHi 
+          ? 'सीधे "Hey VC..." बोलें या बोलना शुरू करें दबाएं' 
+          : 'Directly say "Hey VC..." or tap Start Voice';
+      }
+    }
+  }
+
+  window.onVoiceSessionStarted = function() {
+    isVoiceListeningActive = true;
+    updateVoiceButtonUI();
+  };
+
+  window.onVoiceSessionStopped = function() {
+    isVoiceListeningActive = false;
+    updateVoiceButtonUI();
+  };
 
   function showListeningUI() {
-    const isHi = userSettings.appLanguage === 'hi';
+    const selectedLang = $('voiceLangSelect')?.value || 'bilingual';
+    const isHi = selectedLang === 'hi-IN' || (selectedLang === 'bilingual' && userSettings.appLanguage === 'hi');
     if (voiceOverlay) voiceOverlay.classList.remove('hidden');
     if (voiceText) voiceText.textContent = isHi ? 'सुन रहा हूँ... बोलिए' : 'Listening... Speak now';
     if (voiceLiveTranscript) voiceLiveTranscript.textContent = '';
@@ -4862,18 +5314,35 @@ function initVoiceClockApp() {
 
   closeVoiceOverlayBtn?.addEventListener('click', () => {
     hideListeningUI();
-    if (activeSpeechRecognition) {
-      try { activeSpeechRecognition.abort(); } catch {}
-      activeSpeechRecognition = null;
-    }
   });
 
-  // Voice button click handler (Screen-On assistant)
+  // Voice button click handler (Manual trigger / toggle)
   voiceBtn?.addEventListener('click', () => {
-    const isHi = userSettings.appLanguage === 'hi';
-    const selectedLang = $('voiceLangSelect')?.value || (isHi ? 'hi-IN' : 'en-US');
-    if (voiceStatus) voiceStatus.textContent = isHi ? 'सुन रहा हूँ... अब बोलिए' : 'Listening... Speak now';
+    const selectedLang = $('voiceLangSelect')?.value || 'bilingual';
+    const isHi = selectedLang === 'hi-IN' || (selectedLang === 'bilingual' && userSettings.appLanguage === 'hi');
+
+    if (isVoiceListeningActive) {
+      // User wants to STOP listening
+      isVoiceListeningActive = false;
+      updateVoiceButtonUI();
+      hideListeningUI();
+
+      if (window.AndroidVoice && typeof window.AndroidVoice.stopListening === 'function') {
+        window.AndroidVoice.stopListening();
+      }
+      if (activeSpeechRecognition) {
+        try { activeSpeechRecognition.abort(); } catch {}
+        activeSpeechRecognition = null;
+      }
+      showToast(isHi ? 'वॉयस असिस्टेंट बंद कर दिया गया है' : 'Voice Assistant stopped');
+      return;
+    }
+
+    // User wants to START listening
+    isVoiceListeningActive = true;
+    updateVoiceButtonUI();
     showListeningUI();
+    showToast(isHi ? 'वॉयस असिस्टेंट शुरू हो गया है (पृष्ठभूमि में भी सुन रहा है)' : 'Voice Assistant started (Listening in background)');
 
     if (window.AndroidVoice && typeof window.AndroidVoice.startListening === 'function') {
       window.AndroidVoice.startListening(selectedLang);
@@ -4882,7 +5351,9 @@ function initVoiceClockApp() {
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      if (voiceStatus) voiceStatus.textContent = isHi ? 'इस ब्राउज़र में वाक् पहचान उपलब्ध नहीं है' : 'Speech recognition not supported on this browser';
+      isVoiceListeningActive = false;
+      updateVoiceButtonUI();
+      if (voiceStatus) voiceStatus.textContent = isHi ? 'वाक् पहचान अनुपलब्ध है' : 'Speech recognition not available';
       showToast(isHi ? 'वाक् पहचान अनुपलब्ध है' : 'Speech recognition not available');
       hideListeningUI();
       return;
@@ -4891,9 +5362,9 @@ function initVoiceClockApp() {
     try {
       const rec = new SpeechRecognition();
       activeSpeechRecognition = rec;
-      rec.lang = selectedLang;
+      rec.lang = (selectedLang === 'bilingual') ? (isHi ? 'hi-IN' : 'en-IN') : selectedLang;
       rec.interimResults = true;
-      rec.continuous = false;
+      rec.continuous = true;
 
       rec.onresult = (ev) => {
         let transcript = '';
@@ -4901,74 +5372,434 @@ function initVoiceClockApp() {
           transcript += ev.results[i][0].transcript;
         }
         if (voiceLiveTranscript) voiceLiveTranscript.textContent = transcript;
-        if (ev.results[0].isFinal) {
+        if (ev.results[ev.results.length - 1].isFinal) {
           if (voiceText) voiceText.textContent = isHi ? 'संसाधित हो रहा है...' : 'Processing...';
           handleCommand(transcript);
           setTimeout(() => {
             hideListeningUI();
-          }, 1500);
+          }, 2000);
         }
       };
 
       rec.onerror = (e) => {
         console.log('SpeechRecognition error:', e);
-        if (voiceStatus) voiceStatus.textContent = isHi ? 'आवाज़ पहचान नहीं सके। कृपया पुनः प्रयास करें।' : 'Could not catch voice. Please try again.';
-        hideListeningUI();
       };
 
       rec.onend = () => {
-        if (voiceStatus) voiceStatus.textContent = isHi ? 'बोलने के लिए माइक बटन दबाएं' : 'Tap microphone button to speak';
+        if (isVoiceListeningActive) {
+          try { rec.start(); } catch {}
+        } else {
+          updateVoiceButtonUI();
+        }
       };
 
       rec.start();
     } catch (e) {
       console.log('Speech start exception:', e);
+      isVoiceListeningActive = false;
+      updateVoiceButtonUI();
       hideListeningUI();
     }
   });
 
   function handleCommand(cmdText) {
     if (!cmdText) return;
-    const isHi = userSettings.appLanguage === 'hi';
     const parsed = parseCommand(cmdText);
+    const isHi = parsed.isHindi !== undefined ? parsed.isHindi : (userSettings.appLanguage === 'hi');
 
+    function respond(msg, logType = 'info') {
+      if (voiceText) voiceText.textContent = msg;
+      if (voiceStatus) voiceStatus.textContent = msg;
+      showToast(msg);
+      if (typeof addLog === 'function') addLog(msg, logType);
+      playTTS(msg, isHi ? 'hi-IN' : 'en-US', isHi ? 'female_in' : 'female_1');
+    }
+
+    if (parsed.type === 'greeting') {
+      const resp = isHi ? 'हाँ कहिए, मैं सुन रहा हूँ' : "Yes, I am listening. How can I help you?";
+      respond(resp, 'info');
+      return;
+    }
+
+    if (parsed.type === 'time_query') {
+      const effectiveNow = getEffectiveNow();
+      let hours = effectiveNow.getHours();
+      const minutes = effectiveNow.getMinutes();
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      const displayHours = hours % 12 || 12;
+      const minStr = minutes < 10 ? '0' + minutes : minutes;
+
+      let periodHi = 'सुबह';
+      if (hours >= 12 && hours < 16) periodHi = 'दोपहर';
+      else if (hours >= 16 && hours < 20) periodHi = 'शाम';
+      else if (hours >= 20 || hours < 4) periodHi = 'रात';
+
+      const responseHi = minutes === 0 
+        ? `अभी ${periodHi} के ठीक ${displayHours} बजे हैं`
+        : `अभी ${periodHi} के ${displayHours} बजकर ${minutes} मिनट हुए हैं`;
+      const responseEn = `The time is ${displayHours}:${minStr} ${ampm}`;
+
+      respond(isHi ? responseHi : responseEn, 'info');
+      return;
+    }
+
+    // ==================== DELETE COMMAND ====================
+    if (parsed.type === 'delete') {
+      // 1. Delete all
+      if (parsed.isAll) {
+        if (parsed.target === 'alarm' || parsed.target === 'all') {
+          const allAlarmIds = alarms.map(a => a.id);
+          allAlarmIds.forEach(id => permanentlyDeleteAlarmItem(id));
+        }
+        if (parsed.target === 'task' || parsed.target === 'all') {
+          const allTaskIds = tasks.map(t => t.id);
+          allTaskIds.forEach(id => permanentlyDeleteTaskItem(id));
+        }
+        if (window.AndroidVoice && window.AndroidVoice.stopAlarmService) {
+          window.AndroidVoice.stopAlarmService();
+        }
+
+        const resp = parsed.target === 'task'
+          ? (isHi ? 'सभी कार्य हटा दिए गए हैं' : 'All tasks have been deleted')
+          : parsed.target === 'all'
+            ? (isHi ? 'सभी अलार्म और कार्य हटा दिए गए हैं' : 'All alarms and tasks have been deleted')
+            : (isHi ? 'सभी अलार्म हटा दिए गए हैं' : 'All alarms have been deleted');
+        respond(resp, 'deleted');
+        return;
+      }
+
+      // 2. Delete by specific time
+      if (parsed.timeInfo) {
+        let targetH = parsed.timeInfo.hour;
+        if (parsed.timeInfo.ampm === 'pm' && targetH < 12) targetH += 12;
+        if (parsed.timeInfo.ampm === 'am' && targetH === 12) targetH = 0;
+        const targetM = parsed.timeInfo.minute;
+
+        // Check alarms first if target is alarm or unspecified
+        if (parsed.target !== 'task') {
+          const alarmMatches = alarms.filter(a => {
+            const d = new Date(a.time);
+            const h = d.getHours();
+            const m = d.getMinutes();
+            return parsed.timeInfo.ampm ? (h === targetH && m === targetM) : ((h % 12 === targetH % 12) && m === targetM);
+          });
+          const matchAlarm = alarmMatches.find(a => a.enabled) || alarmMatches[0];
+          if (matchAlarm) {
+            const timeStr = formatAlarmTimeString(matchAlarm.time);
+            permanentlyDeleteAlarmItem(matchAlarm.id);
+            const resp = isHi ? `${timeStr} बजे का अलार्म हटा दिया गया है` : `Alarm for ${timeStr} deleted`;
+            respond(resp, 'deleted');
+            return;
+          }
+        }
+
+        // Check tasks
+        if (parsed.target !== 'alarm') {
+          const taskMatches = tasks.filter(t => {
+            const d = new Date(t.time);
+            const h = d.getHours();
+            const m = d.getMinutes();
+            return parsed.timeInfo.ampm ? (h === targetH && m === targetM) : ((h % 12 === targetH % 12) && m === targetM);
+          });
+          const matchTask = taskMatches.find(t => t.enabled) || taskMatches[0];
+          if (matchTask) {
+            const title = matchTask.title;
+            permanentlyDeleteTaskItem(matchTask.id);
+            const resp = isHi ? `कार्य "${title}" हटा दिया गया है` : `Task "${title}" deleted`;
+            respond(resp, 'deleted');
+            return;
+          }
+        }
+
+        const displayM = targetM < 10 ? '0' + targetM : targetM;
+        const resp = isHi 
+          ? `${parsed.timeInfo.hour}:${displayM} पर कोई अलार्म या टास्क नहीं मिला` 
+          : `No alarm or task found for ${parsed.timeInfo.hour}:${displayM}`;
+        respond(resp, 'info');
+        return;
+      }
+
+      // 3. Delete by task title
+      if (parsed.target === 'task' && parsed.title) {
+        const matchTask = tasks.find(t => t.title && t.title.toLowerCase().includes(parsed.title.toLowerCase()));
+        if (matchTask) {
+          const title = matchTask.title;
+          permanentlyDeleteTaskItem(matchTask.id);
+          const resp = isHi ? `कार्य "${title}" हटा दिया गया है` : `Task "${title}" deleted`;
+          respond(resp, 'deleted');
+          return;
+        }
+      }
+
+      // 4. Delete currently ringing alarm or task
+      if (currentActiveAlarmId) {
+        const id = currentActiveAlarmId;
+        permanentlyDeleteAlarmItem(id);
+        const resp = isHi ? 'बजता हुआ अलार्म हटा दिया गया है' : 'Active alarm deleted';
+        respond(resp, 'deleted');
+        return;
+      }
+
+      if (currentActiveTaskId) {
+        const id = currentActiveTaskId;
+        permanentlyDeleteTaskItem(id);
+        const resp = isHi ? 'बजता हुआ कार्य हटा दिया गया है' : 'Active task deleted';
+        respond(resp, 'deleted');
+        return;
+      }
+
+      // 5. Delete upcoming alarm or task
+      if (parsed.target === 'task') {
+        if (tasks.length === 0) {
+          respond(isHi ? 'हटाने के लिए कोई कार्य नहीं है' : 'No tasks to delete', 'info');
+          return;
+        }
+        const toDelete = tasks.find(t => t.enabled) || tasks[0];
+        const title = toDelete.title;
+        permanentlyDeleteTaskItem(toDelete.id);
+        respond(isHi ? `कार्य "${title}" हटा दिया गया है` : `Task "${title}" deleted`, 'deleted');
+        return;
+      }
+
+      // Default: delete upcoming alarm
+      if (alarms.length === 0) {
+        respond(isHi ? 'हटाने के लिए कोई अलार्म नहीं है' : 'No alarms to delete', 'info');
+        return;
+      }
+      const toDelete = alarms.find(a => a.enabled) || alarms[0];
+      const timeStr = formatAlarmTimeString(toDelete.time);
+      permanentlyDeleteAlarmItem(toDelete.id);
+      respond(isHi ? `${timeStr} बजे का अलार्म हटा दिया गया है` : `Alarm for ${timeStr} deleted`, 'deleted');
+      return;
+    }
+
+    // ==================== DISMISS / STOP COMMAND ====================
     if (parsed.type === 'dismiss') {
+      // 1. If ringing, dismiss immediately
       if (currentActiveAlarmId) {
         handleAlarmDismiss();
-        playTTS(isHi ? 'अलार्म बंद कर दिया गया है' : 'Alarm has been dismissed');
-      } else if (currentActiveTaskId) {
+        respond(isHi ? 'अलार्म बंद कर दिया गया है' : 'Alarm has been dismissed', 'dismissed');
+        return;
+      }
+      if (currentActiveTaskId) {
         handleTaskDismiss();
-        playTTS(isHi ? 'कार्य बंद कर दिया गया है' : 'Task has been dismissed');
-      } else {
-        showToast(isHi ? 'कोई बजता हुआ अलार्म नहीं है' : 'No active ringing alarm');
-        playTTS(isHi ? 'कोई बजता हुआ अलार्म नहीं है' : 'No active ringing alarm');
+        respond(isHi ? 'कार्य बंद कर दिया गया है' : 'Task has been dismissed', 'dismissed');
+        return;
       }
+
+      // 2. Dismiss all
+      if (parsed.isAll) {
+        alarms.forEach(al => {
+          if (al.enabled) {
+            al.enabled = false;
+            if (window.AndroidVoice && window.AndroidVoice.cancelAlarm) window.AndroidVoice.cancelAlarm(al.id);
+          }
+        });
+        tasks.forEach(t => {
+          if (t.enabled) {
+            t.enabled = false;
+            if (window.AndroidVoice && window.AndroidVoice.cancelAlarm) window.AndroidVoice.cancelAlarm(t.id);
+          }
+        });
+        saveAlarms(); renderAlarms();
+        saveTasks(); renderTasks();
+        respond(isHi ? 'सभी अलार्म और कार्य बंद कर दिए गए हैं' : 'All alarms and tasks turned off', 'dismissed');
+        return;
+      }
+
+      // 3. Dismiss specific scheduled time
+      if (parsed.timeInfo) {
+        let targetH = parsed.timeInfo.hour;
+        if (parsed.timeInfo.ampm === 'pm' && targetH < 12) targetH += 12;
+        if (parsed.timeInfo.ampm === 'am' && targetH === 12) targetH = 0;
+        const targetM = parsed.timeInfo.minute;
+
+        const alarmMatches = alarms.filter(a => {
+          const d = new Date(a.time);
+          const h = d.getHours();
+          const m = d.getMinutes();
+          return parsed.timeInfo.ampm ? (h === targetH && m === targetM) : ((h % 12 === targetH % 12) && m === targetM);
+        });
+        const foundAlarm = alarmMatches.find(a => a.enabled) || alarmMatches[0];
+        if (foundAlarm) {
+          foundAlarm.enabled = false;
+          if (window.AndroidVoice && window.AndroidVoice.cancelAlarm) window.AndroidVoice.cancelAlarm(foundAlarm.id);
+          saveAlarms();
+          renderAlarms();
+          const timeStr = formatAlarmTimeString(foundAlarm.time);
+          respond(isHi ? `${timeStr} बजे का अलार्म बंद कर दिया गया है` : `Alarm for ${timeStr} turned off`, 'dismissed');
+          return;
+        }
+
+        const taskMatches = tasks.filter(t => {
+          const d = new Date(t.time);
+          const h = d.getHours();
+          const m = d.getMinutes();
+          return parsed.timeInfo.ampm ? (h === targetH && m === targetM) : ((h % 12 === targetH % 12) && m === targetM);
+        });
+        const foundTask = taskMatches.find(t => t.enabled) || taskMatches[0];
+        if (foundTask) {
+          foundTask.enabled = false;
+          if (window.AndroidVoice && window.AndroidVoice.cancelAlarm) window.AndroidVoice.cancelAlarm(foundTask.id);
+          saveTasks();
+          renderTasks();
+          respond(isHi ? `कार्य "${foundTask.title}" बंद कर दिया गया है` : `Task "${foundTask.title}" turned off`, 'dismissed');
+          return;
+        }
+
+        const displayM = targetM < 10 ? '0' + targetM : targetM;
+        respond(isHi ? `${parsed.timeInfo.hour}:${displayM} पर कोई सक्रिय अलार्म नहीं मिला` : `No active alarm found for ${parsed.timeInfo.hour}:${displayM}`, 'info');
+        return;
+      }
+
+      // 4. Dismiss next upcoming active alarm/task
+      const activeAlarm = alarms.find(a => a.enabled);
+      if (activeAlarm) {
+        activeAlarm.enabled = false;
+        if (window.AndroidVoice && window.AndroidVoice.cancelAlarm) window.AndroidVoice.cancelAlarm(activeAlarm.id);
+        saveAlarms();
+        renderAlarms();
+        const timeStr = formatAlarmTimeString(activeAlarm.time);
+        respond(isHi ? `आगामी ${timeStr} बजे का अलार्म बंद कर दिया गया है` : `Upcoming alarm for ${timeStr} turned off`, 'dismissed');
+        return;
+      }
+
+      const activeTask = tasks.find(t => t.enabled);
+      if (activeTask) {
+        activeTask.enabled = false;
+        if (window.AndroidVoice && window.AndroidVoice.cancelAlarm) window.AndroidVoice.cancelAlarm(activeTask.id);
+        saveTasks();
+        renderTasks();
+        respond(isHi ? `कार्य "${activeTask.title}" बंद कर दिया गया है` : `Task "${activeTask.title}" turned off`, 'dismissed');
+        return;
+      }
+
+      respond(isHi ? 'बंद करने के लिए कोई सक्रिय अलार्म नहीं है' : 'No active alarm to turn off', 'info');
       return;
     }
 
+    // ==================== SNOOZE COMMAND ====================
     if (parsed.type === 'snooze') {
-      const snoozeMins = parseInt(userSettings.snoozeDuration || '10', 10) || 10;
+      const defaultMins = parseInt(userSettings.snoozeDuration || '10', 10) || 10;
+      const snoozeMins = parsed.durationMinutes || defaultMins;
+
+      // 1. If ringing, snooze active alarm
       if (currentActiveAlarmId) {
-        handleAlarmSnooze();
-        playTTS(isHi ? `अलार्म ${snoozeMins} मिनट के लिए स्नूज़ कर दिया गया है` : `Alarm snoozed for ${snoozeMins} minutes`);
-      } else if (currentActiveTaskId) {
-        handleTaskSnooze();
-        playTTS(isHi ? `कार्य ${snoozeMins} मिनट के लिए स्नूज़ कर दिया गया है` : `Task snoozed for ${snoozeMins} minutes`);
-      } else {
-        showToast(isHi ? 'स्नूज़ करने के लिए कोई सक्रिय अलार्म नहीं है' : 'No active ringing alarm to snooze');
-        playTTS(isHi ? 'स्नूज़ करने के लिए कोई सक्रिय अलार्म नहीं है' : 'No active ringing alarm to snooze');
+        const al = alarms.find(a => a.id === currentActiveAlarmId);
+        if (al) {
+          al.snoozedUntil = Date.now() + snoozeMins * 60000;
+          al.time = new Date(Date.now() + snoozeMins * 60000);
+          al.ringing = false;
+          stopAlarmAudio(al.id);
+          if (window.AndroidVoice && window.AndroidVoice.stopAlarmService) window.AndroidVoice.stopAlarmService();
+          if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
+            window.AndroidVoice.scheduleAlarm(al.id, al.time.getTime(), al.label, al.mode, al.ttsText, al.voice || 'female_1', al.intervalMs || 0);
+          }
+          saveAlarms();
+          renderAlarms();
+          currentActiveAlarmId = null;
+          alarmModal?.classList.remove('show');
+        }
+        respond(isHi ? `अलार्म ${snoozeMins} मिनट के लिए स्नूज़ कर दिया गया है` : `Alarm snoozed for ${snoozeMins} minutes`, 'snoozed');
+        return;
       }
+
+      if (currentActiveTaskId) {
+        const t = tasks.find(x => x.id === currentActiveTaskId);
+        if (t) {
+          t.snoozedUntil = Date.now() + snoozeMins * 60000;
+          t.time = new Date(Date.now() + snoozeMins * 60000);
+          t.ringing = false;
+          stopTaskAudio(t.id);
+          if (window.AndroidVoice && window.AndroidVoice.stopAlarmService) window.AndroidVoice.stopAlarmService();
+          if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
+            window.AndroidVoice.scheduleAlarm(t.id, t.time.getTime(), t.title, 'task', t.title, t.voice, t.intervalMs || 0);
+          }
+          saveTasks();
+          renderTasks();
+          currentActiveTaskId = null;
+          taskModal?.classList.remove('show');
+        }
+        respond(isHi ? `कार्य ${snoozeMins} मिनट के लिए स्नूज़ कर दिया गया है` : `Task snoozed for ${snoozeMins} minutes`, 'snoozed');
+        return;
+      }
+
+      // 2. Snooze specific scheduled alarm
+      if (parsed.timeInfo) {
+        let targetH = parsed.timeInfo.hour;
+        if (parsed.timeInfo.ampm === 'pm' && targetH < 12) targetH += 12;
+        if (parsed.timeInfo.ampm === 'am' && targetH === 12) targetH = 0;
+        const targetM = parsed.timeInfo.minute;
+
+        const alarmMatches = alarms.filter(a => {
+          const d = new Date(a.time);
+          const h = d.getHours();
+          const m = d.getMinutes();
+          return parsed.timeInfo.ampm ? (h === targetH && m === targetM) : ((h % 12 === targetH % 12) && m === targetM);
+        });
+        const matchAlarm = alarmMatches.find(a => a.enabled) || alarmMatches[0];
+        if (matchAlarm) {
+          matchAlarm.time = new Date(new Date(matchAlarm.time).getTime() + snoozeMins * 60000);
+          matchAlarm.enabled = true;
+          if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
+            window.AndroidVoice.scheduleAlarm(matchAlarm.id, matchAlarm.time.getTime(), matchAlarm.label, matchAlarm.mode, matchAlarm.ttsText, matchAlarm.voice || 'female_1', matchAlarm.intervalMs || 0);
+          }
+          saveAlarms();
+          renderAlarms();
+          const timeStr = formatAlarmTimeString(matchAlarm.time);
+          respond(isHi ? `अलार्म ${snoozeMins} मिनट आगे बढ़ाकर ${timeStr} बजे कर दिया गया है` : `Alarm snoozed by ${snoozeMins} minutes to ${timeStr}`, 'snoozed');
+          return;
+        }
+      }
+
+      // 3. Snooze upcoming alarm
+      const activeAlarm = alarms.find(a => a.enabled);
+      if (activeAlarm) {
+        activeAlarm.time = new Date(new Date(activeAlarm.time).getTime() + snoozeMins * 60000);
+        if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
+          window.AndroidVoice.scheduleAlarm(activeAlarm.id, activeAlarm.time.getTime(), activeAlarm.label, activeAlarm.mode, activeAlarm.ttsText, activeAlarm.voice || 'female_1', activeAlarm.intervalMs || 0);
+        }
+        saveAlarms();
+        renderAlarms();
+        const timeStr = formatAlarmTimeString(activeAlarm.time);
+        respond(isHi ? `आगामी अलार्म ${snoozeMins} मिनट आगे बढ़ाकर ${timeStr} बजे कर दिया गया है` : `Upcoming alarm snoozed by ${snoozeMins} minutes to ${timeStr}`, 'snoozed');
+        return;
+      }
+
+      respond(isHi ? 'स्नूज़ करने के लिए कोई सक्रिय अलार्म नहीं है' : 'No active alarm to snooze', 'info');
       return;
     }
 
+    // ==================== ALARM CREATION ====================
     if (parsed.type === 'alarm') {
-      const now = new Date();
-      let target = new Date();
-      target.setHours(parsed.hour, parsed.minute, 0, 0);
-      if (target <= now) {
+      const effectiveNow = getEffectiveNow();
+      let target = new Date(effectiveNow);
+      let h = parsed.hour;
+      const m = parsed.minute || 0;
+
+      if (parsed.ampm === 'pm' && h < 12) h += 12;
+      if (parsed.ampm === 'am' && h === 12) h = 0;
+      target.setHours(h, m, 0, 0);
+
+      // Smart upcoming detection if no AM/PM specified
+      if (parsed.ampm === null && h < 12) {
+        let amTarget = new Date(effectiveNow);
+        amTarget.setHours(h, m, 0, 0);
+        let pmTarget = new Date(effectiveNow);
+        pmTarget.setHours(h + 12, m, 0, 0);
+        if (amTarget > effectiveNow) {
+          target = amTarget;
+        } else if (pmTarget > effectiveNow) {
+          target = pmTarget;
+        } else {
+          amTarget.setDate(amTarget.getDate() + 1);
+          target = amTarget;
+        }
+      } else if (target <= effectiveNow) {
         target.setDate(target.getDate() + 1);
       }
-      const chosenVoice = $('alarmVoice')?.value || 'female_1';
+
+      const chosenVoice = $('alarmVoice')?.value || (isHi ? 'female_in' : 'female_1');
       const al = {
         id: 'AL' + Date.now(),
         time: target,
@@ -4987,26 +5818,51 @@ function initVoiceClockApp() {
       saveAlarms();
       renderAlarms();
       if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
-        window.AndroidVoice.scheduleAlarm(al.id, al.time.getTime(), al.label, 'tts', al.ttsText, al.voice);
+        window.AndroidVoice.scheduleAlarm(al.id, al.time.getTime(), al.label, 'tts', al.ttsText, al.voice, al.intervalMs || 0);
       }
-      showToast(isHi ? `अलार्म ${formatAlarmTimeString(al.time)} के लिए सेट किया गया` : `Alarm set for ${formatAlarmTimeString(al.time)}`);
-      playTTS(isHi ? `अलार्म ${formatAlarmTimeString(al.time)} बजे के लिए सेट कर दिया गया है` : `Alarm set for ${formatAlarmTimeString(al.time)}`, isHi ? 'hi-IN' : 'en-US', al.voice);
+      const timeFormatted = formatAlarmTimeString(al.time);
+      const resp = isHi 
+        ? `अलार्म ${timeFormatted} बजे के लिए सेट कर दिया गया है` 
+        : `Alarm set for ${timeFormatted}`;
+      respond(resp, 'created');
       return;
     }
 
+    // ==================== TASK CREATION ====================
     if (parsed.type === 'task') {
-      const now = new Date();
-      let target = new Date();
-      target.setHours(parsed.hour, parsed.minute, 0, 0);
-      if (target <= now) {
+      const effectiveNow = getEffectiveNow();
+      let target = new Date(effectiveNow);
+      let h = parsed.hour;
+      const m = parsed.minute || 0;
+
+      if (parsed.ampm === 'pm' && h < 12) h += 12;
+      if (parsed.ampm === 'am' && h === 12) h = 0;
+      target.setHours(h, m, 0, 0);
+
+      if (parsed.ampm === null && h < 12) {
+        let amTarget = new Date(effectiveNow);
+        amTarget.setHours(h, m, 0, 0);
+        let pmTarget = new Date(effectiveNow);
+        pmTarget.setHours(h + 12, m, 0, 0);
+        if (amTarget > effectiveNow) {
+          target = amTarget;
+        } else if (pmTarget > effectiveNow) {
+          target = pmTarget;
+        } else {
+          amTarget.setDate(amTarget.getDate() + 1);
+          target = amTarget;
+        }
+      } else if (target <= effectiveNow) {
         target.setDate(target.getDate() + 1);
       }
-      const chosenTaskVoice = $('taskVoice')?.value || 'female_1';
+
+      const chosenTaskVoice = $('taskVoice')?.value || (isHi ? 'female_in' : 'female_1');
       const t = {
         id: 'TSK' + Date.now(),
         title: parsed.title,
         time: target,
         repeat: 'once',
+        intervalMs: null,
         voice: chosenTaskVoice,
         enabled: true,
         ringing: false,
@@ -5017,62 +5873,61 @@ function initVoiceClockApp() {
       saveTasks();
       renderTasks();
       if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
-        window.AndroidVoice.scheduleAlarm(t.id, t.time.getTime(), t.title, 'task', t.title, t.voice);
+        window.AndroidVoice.scheduleAlarm(t.id, t.time.getTime(), t.title, 'task', t.title, t.voice, t.intervalMs || 0);
       }
-      showToast(isHi ? `कार्य ${formatAlarmTimeString(t.time)} के लिए निर्धारित किया गया` : `Task scheduled for ${formatAlarmTimeString(t.time)}`);
-      playTTS(isHi ? `कार्य ${parsed.title} निर्धारित कर दिया गया है` : `Task scheduled for ${formatAlarmTimeString(t.time)}`, isHi ? 'hi-IN' : 'en-US', t.voice);
+      const timeFormatted = formatAlarmTimeString(t.time);
+      const resp = isHi 
+        ? `कार्य "${parsed.title}" ${timeFormatted} बजे के लिए निर्धारित कर दिया गया है` 
+        : `Task "${parsed.title}" scheduled for ${timeFormatted}`;
+      respond(resp, 'created');
       return;
     }
 
-    showToast(isHi ? `निर्देश: "${cmdText}"` : `Command: "${cmdText}"`);
+    // Unrecognized command
+    const resp = isHi 
+      ? `माफ़ कीजिए, मैं समझ नहीं पाया। आप "7 बजे का अलार्म लगाओ", "अलार्म डिलीट करो" या "अलार्म बंद करो" कह सकते हैं।` 
+      : `Sorry, I couldn't understand that. You can say "Set alarm at 7 AM", "Delete alarm", or "Stop alarm".`;
+    respond(resp, 'info');
   }
 
   // Hotword wakeup trigger from background service or native recognizer
   window.handleWakeWordTrigger = function(rawText) {
-    const isHi = userSettings.appLanguage === 'hi';
+    if (!rawText || !rawText.trim()) return;
+    const isHi = isHindiInput(rawText);
     showListeningUI();
     try {
       if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
     } catch {}
 
-    if (!rawText || rawText.trim() === '') {
-      if (voiceText) voiceText.textContent = isHi ? "सुन रहा हूँ... बोलिए" : "Listening... Speak now";
-      if (voiceSub) voiceSub.textContent = isHi ? "अपना निर्देश बोलें" : "Say your command";
-      return;
-    }
-
-    let cmd = normalizeText(rawText);
-    let stripped = cmd.replace(/^hey\s+vc[,\s]*/i, '')
-                      .replace(/^vc[,\s]*/i, '')
-                      .replace(/^voice\s+clock[,\s]*/i, '')
-                      .replace(/^हे\s*वीसी[,\s]*/i, '')
-                      .replace(/^नमस्ते\s*वीसी[,\s]*/i, '')
-                      .replace(/^ओके\s*वीसी[,\s]*/i, '')
-                      .trim();
-
-    if (!stripped) {
-      if (voiceText) voiceText.textContent = isHi ? "नमस्ते! सुन रहा हूँ" : "Hello! Listening...";
-      if (voiceLiveTranscript) voiceLiveTranscript.textContent = isHi ? "सुन रहा हूँ..." : "Listening...";
-      if (voiceSub) voiceSub.textContent = isHi ? "अपना निर्देश बोलें (जैसे: 7 बजे का अलार्म)" : "Speak your command (e.g. 7 AM alarm)";
-      playTTS(isHi ? "हाँ कहिए, मैं सुन रहा हूँ" : "Yes, I am listening");
-      setTimeout(() => {
-        if (voiceText && (voiceText.textContent === "नमस्ते! सुन रहा हूँ" || voiceText.textContent === "Hello! Listening...")) {
-          hideListeningUI();
-        }
-      }, 7500);
-      return;
-    }
-
-    if (voiceText) voiceText.textContent = isHi ? "वॉयस क्लॉक" : "Voice Clock";
     if (voiceLiveTranscript) voiceLiveTranscript.textContent = `"${rawText}"`;
+    if (voiceText) voiceText.textContent = isHi ? "वॉयस क्लॉक" : "Voice Clock";
     if (voiceSub) voiceSub.textContent = isHi ? "निर्देश संसाधित हो रहा है..." : "Processing command...";
 
-    handleCommand(cmd);
+    handleCommand(rawText);
 
     setTimeout(() => {
       hideListeningUI();
-    }, 2800);
+    }, 3200);
   };
+
+  // Sync voice assistant language on changes
+  $('voiceLangSelect')?.addEventListener('change', (e) => {
+    const newLang = e.target.value;
+    if (window.AndroidVoice && typeof window.AndroidVoice.setVoiceAssistantLanguage === 'function') {
+      window.AndroidVoice.setVoiceAssistantLanguage(newLang);
+    }
+  });
+
+  setTimeout(() => {
+    const selectedLang = $('voiceLangSelect')?.value || 'bilingual';
+    if (window.AndroidVoice && typeof window.AndroidVoice.setVoiceAssistantLanguage === 'function') {
+      window.AndroidVoice.setVoiceAssistantLanguage(selectedLang);
+    }
+    if (window.AndroidVoice && typeof window.AndroidVoice.isVoiceListeningActive === 'function') {
+      isVoiceListeningActive = window.AndroidVoice.isVoiceListeningActive();
+      updateVoiceButtonUI();
+    }
+  }, 600);
 
   window.handleNativeVoice = function(text) {
     window.handleWakeWordTrigger(text);
@@ -5402,23 +6257,79 @@ function initVoiceClockApp() {
   window.handleNativeAlarmEvent = handleNativeAlarmEvent;
 
   window.handleNativeAlarmTrigger = function(id, type, label) {
+    const isHi = userSettings.appLanguage === 'hi';
+
+    // Verify against deleted IDs
+    let deletedIds = [];
+    try {
+      deletedIds = JSON.parse(localStorage.getItem("vc_deleted_ids") || "[]");
+    } catch (e) {}
+
+    if (deletedIds.includes(id)) {
+      console.warn("handleNativeAlarmTrigger: ID " + id + " was deleted. Terminating!");
+      if (window.AndroidVoice && window.AndroidVoice.cancelAlarm) {
+        window.AndroidVoice.cancelAlarm(id);
+      }
+      if (window.AndroidVoice && window.AndroidVoice.stopAlarmService) {
+        window.AndroidVoice.stopAlarmService();
+      }
+      return;
+    }
+
     if (type === 'task') {
       const t = tasks.find(x => x.id === id);
-      if (t) {
-        startTask(t);
-      } else {
-        currentActiveTaskId = id;
-        if (taskModalLabel) taskModalLabel.textContent = label || 'Task';
-        taskModal?.classList.add('show');
+      if (!t || t.enabled === false) {
+        console.warn("handleNativeAlarmTrigger: Task " + id + " not found or disabled. Purging!");
+        permanentlyDeleteTaskItem(id);
+        return;
+      }
+      currentActiveTaskId = id;
+      scheduleInAppAutoSilence('task', id);
+      const snoozeMins = (t && t.intervalMs && t.intervalMs > 0)
+        ? Math.max(1, Math.round(t.intervalMs / 60000))
+        : (parseInt(userSettings.snoozeDuration || '10', 10) || 10);
+      const taskSwipeHint = $('taskSwipeHintLeft');
+      if (taskSwipeHint) {
+        taskSwipeHint.textContent = isHi ? `◂ स्नूज़ (${snoozeMins} मिनट)` : `◂ Slide to Snooze (${snoozeMins}m)`;
+      }
+      if (taskModalLabel) taskModalLabel.textContent = (t && t.title) ? t.title : (label || (isHi ? 'कार्य' : 'Task'));
+      if (taskModalTime && t && t.time) taskModalTime.textContent = formatAlarmTimeString(t.time);
+      taskModal?.classList.add('show');
+      if (t) t.ringing = true;
+      if (window.AndroidVoice && window.AndroidVoice.setAlarmRinging) {
+        window.AndroidVoice.setAlarmRinging(true);
       }
     } else {
       const a = alarms.find(x => x.id === id);
-      if (a) {
-        triggerAlarm(a);
-      } else {
-        currentActiveAlarmId = id;
-        if (modalLabel) modalLabel.textContent = label || 'Alarm';
-        alarmModal?.classList.add('show');
+      if (!a || a.enabled === false) {
+        console.warn("handleNativeAlarmTrigger: Alarm " + id + " not found or disabled. Purging!");
+        permanentlyDeleteAlarmItem(id);
+        return;
+      }
+      currentActiveAlarmId = id;
+      scheduleInAppAutoSilence('alarm', id);
+      const snoozeMins = (a && a.intervalMs && a.intervalMs > 0)
+        ? Math.max(1, Math.round(a.intervalMs / 60000))
+        : (parseInt(userSettings.snoozeDuration || '10', 10) || 10);
+      const alarmSwipeHint = $('alarmSwipeHintLeft');
+      if (alarmSwipeHint) {
+        alarmSwipeHint.textContent = isHi ? `◂ स्नूज़ (${snoozeMins} मिनट)` : `◂ Slide to Snooze (${snoozeMins}m)`;
+      }
+      if (modalLabel) modalLabel.textContent = (a && a.label) ? a.label : (label || (isHi ? 'अलार्म' : 'Alarm'));
+      if (modalTime && a && a.time) modalTime.textContent = formatAlarmTimeString(a.time);
+      if (modalMessage) {
+        if (a && a.message && a.message !== a.label) {
+          modalMessage.textContent = a.message;
+          modalMessage.style.display = 'block';
+        } else {
+          modalMessage.textContent = '';
+          modalMessage.style.display = 'none';
+        }
+      }
+      alarmModal?.classList.add('show');
+      if (a) a.ringing = true;
+      if (window.AndroidVoice && window.AndroidVoice.setAlarmRinging) {
+        window.AndroidVoice.setAlarmRinging(true);
       }
     }
   };
@@ -5456,8 +6367,32 @@ function initVoiceClockApp() {
           if (Array.isArray(nativeList)) {
             let changedAlarms = false;
             let changedTasks = false;
+            let deletedIds = [];
+            try {
+              deletedIds = JSON.parse(localStorage.getItem("vc_deleted_ids") || "[]");
+            } catch (e) {}
+
             nativeList.forEach(nat => {
+              if (deletedIds.includes(nat.id)) {
+                // If it was deleted, purge it from native right away!
+                if (window.AndroidVoice && window.AndroidVoice.cancelAlarm) {
+                  window.AndroidVoice.cancelAlarm(nat.id);
+                }
+                return;
+              }
+
               const localAlarm = alarms.find(a => a.id === nat.id);
+              const localTask = tasks.find(t => t.id === nat.id);
+
+              if (!localAlarm && !localTask) {
+                // Zombie alarm detected in native storage that does not exist in local tasks or alarms!
+                console.warn("syncNativeAlarmState: Zombie alarm in native storage: " + nat.id + ". Purging.");
+                if (window.AndroidVoice && window.AndroidVoice.cancelAlarm) {
+                  window.AndroidVoice.cancelAlarm(nat.id);
+                }
+                return;
+              }
+
               if (localAlarm) {
                 const natTime = Number(nat.triggerTime);
                 if (!isNaN(natTime) && natTime > localAlarm.time.getTime()) {
@@ -5470,7 +6405,6 @@ function initVoiceClockApp() {
                   changedAlarms = true;
                 }
               }
-              const localTask = tasks.find(t => t.id === nat.id);
               if (localTask) {
                 const natTime = Number(nat.triggerTime);
                 const taskTimeMs = localTask.time instanceof Date ? localTask.time.getTime() : new Date(localTask.time).getTime();
@@ -5523,9 +6457,28 @@ function initVoiceClockApp() {
   }
 
   let vcAccount = null;
-  try {
-    vcAccount = JSON.parse(localStorage.getItem('vc_account'));
-  } catch (e) { vcAccount = null; }
+  function loadVcAccount() {
+    try {
+      const localStr = localStorage.getItem('vc_account');
+      if (localStr) {
+        vcAccount = JSON.parse(localStr);
+      }
+    } catch (e) {
+      vcAccount = null;
+    }
+    // Check Android native SharedPreferences backup if not found in localStorage
+    if (!vcAccount && window.AndroidVoice && window.AndroidVoice.getVcAccountNative) {
+      try {
+        const nativeStr = window.AndroidVoice.getVcAccountNative();
+        if (nativeStr && nativeStr.trim()) {
+          vcAccount = JSON.parse(nativeStr);
+          try { localStorage.setItem('vc_account', nativeStr); } catch (e) {}
+        }
+      } catch (e) {}
+    }
+    return vcAccount;
+  }
+  loadVcAccount();
 
   let sentReminders = [];
   try {
@@ -5546,6 +6499,11 @@ function initVoiceClockApp() {
   try {
     recentVcIds = JSON.parse(localStorage.getItem('vc_recent_ids')) || [];
   } catch (e) { recentVcIds = []; }
+
+  let trustedVcIds = [];
+  try {
+    trustedVcIds = JSON.parse(localStorage.getItem('vc_trusted_ids')) || [];
+  } catch (e) { trustedVcIds = []; }
 
   let pendingVcAccount = null;
   let otpResendCountdown = 0;
@@ -5582,11 +6540,43 @@ function initVoiceClockApp() {
 
   function saveVcAccount() {
     if (vcAccount) {
-      localStorage.setItem('vc_account', JSON.stringify(vcAccount));
+      const jsonStr = JSON.stringify(vcAccount);
+      try { localStorage.setItem('vc_account', jsonStr); } catch (e) {}
+      if (window.AndroidVoice && window.AndroidVoice.saveVcAccountNative) {
+        try { window.AndroidVoice.saveVcAccountNative(jsonStr); } catch (e) {}
+      }
     } else {
-      localStorage.removeItem('vc_account');
+      try { localStorage.removeItem('vc_account'); } catch (e) {}
+      if (window.AndroidVoice && window.AndroidVoice.saveVcAccountNative) {
+        try { window.AndroidVoice.saveVcAccountNative(''); } catch (e) {}
+      }
     }
     updateFamilySettingsBadge();
+    updateAuthVisibility();
+  }
+
+  function updateAuthVisibility() {
+    const isLoggedIn = !!(vcAccount && vcAccount.verified);
+    const createView = $('vcAccountCreateView');
+    const hubView = $('remindFamilyHubView');
+
+    if (isLoggedIn) {
+      // If user is already logged in, never show the login/create account view
+      if (createView && !createView.classList.contains('hidden')) {
+        createView.classList.add('hidden');
+        if (hubView) hubView.classList.remove('hidden');
+      }
+    } else {
+      // When logged out, reset to create form section
+      const createSec = $('vcCreateFormSection');
+      const loginSec = $('vcLoginFormSection');
+      if (createSec) createSec.classList.remove('hidden');
+      if (loginSec) loginSec.classList.add('hidden');
+      const headerTitle = $('vcCreateTitle');
+      if (headerTitle) {
+        headerTitle.textContent = userSettings.appLanguage === 'hi' ? 'VC खाता बनाएं' : 'Create VC Account';
+      }
+    }
   }
 
   function saveSentReminders() {
@@ -5607,6 +6597,18 @@ function initVoiceClockApp() {
   function saveRecentVcIds() {
     localStorage.setItem('vc_recent_ids', JSON.stringify(recentVcIds));
     renderRecentVcIds();
+  }
+
+  function saveTrustedVcIds() {
+    localStorage.setItem('vc_trusted_ids', JSON.stringify(trustedVcIds));
+    updateReminderBadges();
+    renderTrustedVcList();
+  }
+
+  function isVcIdTrusted(rawVcId) {
+    if (!rawVcId) return false;
+    const clean = rawVcId.trim().toUpperCase();
+    return trustedVcIds.some(item => (item.vcId || '').trim().toUpperCase() === clean);
   }
 
   function updateFamilySettingsBadge() {
@@ -5650,6 +6652,8 @@ function initVoiceClockApp() {
     const pendingReceived = receivedReminders.filter(r => r.status === 'pending').length;
     const recBadge = $('badgeReceivedCount');
     if (recBadge) recBadge.textContent = pendingReceived;
+    const trustBadge = $('badgeTrustedCount');
+    if (trustBadge) trustBadge.textContent = trustedVcIds.length;
   }
 
   function renderNotifications() {
@@ -5731,17 +6735,23 @@ function initVoiceClockApp() {
     container.innerHTML = receivedReminders.slice().reverse().map(r => {
       const dt = new Date(r.timeIso);
       const timeStr = dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ', ' + dt.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      const isAutoAccepted = r.status === 'accepted' && r.autoAccepted;
+      let statusText = isHi
+        ? (r.status === 'accepted' ? (isAutoAccepted ? '🛡️ स्वतः स्वीकृत' : '✓ स्वीकृत') : (r.status === 'rejected' ? '✕ अस्वीकृत' : '⏳ लंबित'))
+        : (r.status === 'accepted' ? (isAutoAccepted ? '🛡️ Auto-Accepted' : '✓ Accepted') : (r.status === 'rejected' ? '✕ Declined' : '⏳ Pending'));
       const statusClass = r.status === 'accepted' ? 'status-accepted' : (r.status === 'rejected' ? 'status-rejected' : 'status-pending');
-      const statusText = isHi
-        ? (r.status === 'accepted' ? '✓ स्वीकृत' : (r.status === 'rejected' ? '✕ अस्वीकृत' : '⏳ लंबित'))
-        : (r.status === 'accepted' ? '✓ Accepted' : (r.status === 'rejected' ? '✕ Declined' : '⏳ Pending'));
       const daysStr = r.repeatDays && r.repeatDays.length > 0 ? formatDaysSummary(r.repeatDays, isHi) : (isHi ? 'एक बार' : 'Once');
       const isPending = r.status === 'pending';
+      const senderTrusted = r.senderVcId && isVcIdTrusted(r.senderVcId);
+
       return `
         <div class="reminder-card" id="receivedCard_${r.id}">
           <div class="reminder-card-header">
             <div class="reminder-sender-meta">
-              <span class="reminder-person-name">${escapeHtml(r.senderName || 'Family/Friend')}</span>
+              <span class="reminder-person-name" style="display:flex;align-items:center;gap:6px;">
+                ${senderTrusted ? '<span>🛡️</span>' : ''}
+                <span>${escapeHtml(r.senderName || 'Family/Friend')}</span>
+              </span>
               <span class="reminder-person-vcid">${escapeHtml(r.senderVcId || '')}</span>
             </div>
             <span class="reminder-status-badge ${statusClass}">${statusText}</span>
@@ -5751,6 +6761,12 @@ function initVoiceClockApp() {
             <div class="reminder-card-details">
               <span class="reminder-detail-tag">⏰ ${timeStr}</span>
               <span class="reminder-detail-tag">🔁 ${daysStr}</span>
+              ${isAutoAccepted ? `<span class="reminder-detail-tag" style="color:#10b981;">🛡️ ${isHi ? 'विश्वसनीय संपर्क से स्वतः जुड़ा' : 'Auto-added from Trusted VC ID'}</span>` : ''}
+              ${(!senderTrusted && r.senderVcId) ? `
+                <button type="button" class="btn-trust-inline" onclick="window.quickTrustSender('${escapeHtml(r.senderVcId)}', '${escapeHtml(r.senderName || '')}')">
+                  🛡️ ${isHi ? '+ विश्वसनीय बनाएं' : '+ Trust Contact'}
+                </button>
+              ` : ''}
             </div>
           </div>
           ${isPending ? `
@@ -5769,6 +6785,114 @@ function initVoiceClockApp() {
       `;
     }).join('');
   }
+
+  function renderTrustedVcList() {
+    const container = $('trustedVcListContainer');
+    if (!container) return;
+    const isHi = userSettings.appLanguage === 'hi';
+
+    if (trustedVcIds.length === 0) {
+      container.innerHTML = `
+        <div class="notif-empty-state" style="padding:32px 16px;text-align:center;">
+          <div style="font-size:36px;margin-bottom:10px;">🛡️</div>
+          <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">
+            ${isHi ? 'कोई विश्वसनीय VC ID नहीं है' : 'No Trusted VC IDs Yet'}
+          </div>
+          <p style="font-size:12px;color:var(--muted);max-width:320px;margin:0 auto;line-height:1.5;">
+            ${isHi 
+              ? 'ऊपर अपने प्रियजनों या विश्वसनीय संपर्कों की VC ID जोड़ें। उनके द्वारा भेजा गया कोई भी रिमाइंडर बिना अनुमति पूछे सीधे आपके टास्क में अपने आप जुड़ जाएगा।' 
+              : 'Add VC IDs of your loved ones or trusted contacts above. Reminders sent by them will bypass manual confirmation and be automatically scheduled in your Tasks.'}
+          </p>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = trustedVcIds.slice().reverse().map(item => {
+      const addedDate = new Date(item.addedAt || Date.now()).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+      const displayName = item.name ? item.name : (isHi ? 'विश्वसनीय संपर्क' : 'Trusted Contact');
+      return `
+        <div class="reminder-card trusted-vc-card" id="trustedCard_${item.id}">
+          <div class="reminder-card-header">
+            <div class="reminder-sender-meta">
+              <span class="reminder-person-name" style="display:flex;align-items:center;gap:6px;">
+                <span>🛡️</span>
+                <span>${escapeHtml(displayName)}</span>
+              </span>
+              <span class="reminder-person-vcid" style="color:#38bdf8;font-weight:600;">${escapeHtml(item.vcId)}</span>
+            </div>
+            <span class="reminder-status-badge status-accepted" style="display:flex;align-items:center;gap:4px;">
+              <span>✓</span>
+              <span>${isHi ? 'स्वतः स्वीकार' : 'Auto-Accept'}</span>
+            </span>
+          </div>
+          <div class="reminder-card-body" style="margin-bottom:6px;">
+            <div class="reminder-card-details">
+              <span class="reminder-detail-tag">📅 ${isHi ? 'जोड़ा गया: ' : 'Added: '} ${addedDate}</span>
+              <span class="reminder-detail-tag" style="color:#10b981;">⚡ ${isHi ? 'बिना पूछे टास्क में जुड़ेगा' : 'Auto-adds to Tasks'}</span>
+            </div>
+          </div>
+          <div class="reminder-actions-row" style="margin-top:6px;padding-top:8px;">
+            <button type="button" class="btn-copy-trusted-id reminder-action-btn" style="background:var(--item-bg);color:var(--text);border:1px solid var(--card-border);" data-id="${item.vcId}">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+              <span>${isHi ? 'ID कॉपी करें' : 'Copy ID'}</span>
+            </button>
+            <button type="button" class="btn-remove-trusted reminder-action-btn reject-btn" data-tid="${item.id}" data-name="${escapeHtml(displayName)}">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+              <span>${isHi ? 'हटाएं' : 'Remove'}</span>
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    container.querySelectorAll('.btn-copy-trusted-id').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idToCopy = btn.dataset.id;
+        if (window.AndroidVoice && window.AndroidVoice.copyToClipboard) {
+          window.AndroidVoice.copyToClipboard(idToCopy);
+        } else if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(idToCopy).catch(() => {});
+        }
+        showPopup(isHi ? 'VC ID क्लिपबोर्ड पर कॉपी हो गया' : 'VC ID copied to clipboard');
+      });
+    });
+
+    container.querySelectorAll('.btn-remove-trusted').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tid = btn.dataset.tid;
+        const name = btn.dataset.name;
+        if (confirm(isHi ? `क्या आप "${name}" को विश्वसनीय संपर्क से हटाना चाहते हैं?` : `Remove "${name}" from Trusted Contacts?`)) {
+          trustedVcIds = trustedVcIds.filter(t => t.id !== tid);
+          saveTrustedVcIds();
+          showPopup(isHi ? 'विश्वसनीय संपर्क हटा दिया गया' : 'Trusted contact removed');
+        }
+      });
+    });
+  }
+
+  window.quickTrustSender = function(senderVcId, senderName) {
+    if (!senderVcId) return;
+    const isHi = userSettings.appLanguage === 'hi';
+    const cleanId = senderVcId.trim().toUpperCase();
+    if (vcAccount && cleanId === vcAccount.vcId.trim().toUpperCase()) return;
+    if (trustedVcIds.some(t => (t.vcId || '').trim().toUpperCase() === cleanId)) {
+      showPopup(isHi ? 'यह VC ID पहले से विश्वसनीय है' : 'This VC ID is already trusted');
+      return;
+    }
+    const newTrusted = {
+      id: 'TID' + Date.now(),
+      vcId: cleanId,
+      name: (senderName || '').trim() || (isHi ? 'विश्वसनीय संपर्क' : 'Trusted Contact'),
+      addedAt: Date.now()
+    };
+    trustedVcIds.push(newTrusted);
+    saveTrustedVcIds();
+    renderReceivedReminders();
+    showPopup(isHi 
+      ? `✓ "${newTrusted.name}" अब विश्वसनीय संपर्क है। भविष्य के रिमाइंडर अपने आप टास्क में जुड़ेंगे!` 
+      : `✓ "${newTrusted.name}" is now trusted. Future reminders will be auto-accepted!`);
+  };
 
   function renderRecentVcIds() {
     const wrap = $('recentVcIdsWrap');
@@ -5816,15 +6940,17 @@ function initVoiceClockApp() {
         taskDt.setDate(taskDt.getDate() + 1);
       }
 
+      const taskRepeat = reminder.repeat || (selectedDays.length > 0 ? 'days' : 'once');
+      const taskIntervalMs = reminder.intervalMs || null;
       const newTask = {
         id: 'TSK' + Date.now(),
         title: reminder.title + (reminder.senderName ? ` (${reminder.senderName})` : ''),
         time: taskDt,
         baseH: baseH,
         baseM: baseM,
-        repeat: selectedDays.length > 0 ? 'days' : 'once',
+        repeat: taskRepeat,
         repeatDays: selectedDays,
-        intervalMs: null,
+        intervalMs: taskIntervalMs,
         voice: reminder.voice || 'female_1',
         enabled: true,
         ringing: false,
@@ -5842,7 +6968,8 @@ function initVoiceClockApp() {
           newTask.title,
           'task',
           newTask.title,
-          newTask.voice
+          newTask.voice,
+          newTask.intervalMs || 0
         );
       }
       renderTasks();
@@ -5955,6 +7082,25 @@ function initVoiceClockApp() {
     }
 
     const selectedDays = getSelectedDays('familyReminderDayPills');
+    const repSelect = $('familyRepeatSelect');
+    const repVal = repSelect ? repSelect.value : 'once';
+    let reminderIntervalMs = null;
+    if (repVal === 'custom') {
+      const customH = parseInt($('familyCustomHours')?.value || 0, 10);
+      const customM = parseInt($('familyCustomMinutes')?.value || 0, 10);
+      reminderIntervalMs = (customH * 3600000) + (customM * 60000);
+      if (!reminderIntervalMs || reminderIntervalMs <= 0) reminderIntervalMs = 60000;
+    } else {
+      const mapping = {
+        '1 min': 60000,
+        '5 min': 300000,
+        '10 min': 600000,
+        '1 hr': 3600000,
+        '5 hr': 18000000
+      };
+      if (mapping[repVal]) reminderIntervalMs = mapping[repVal];
+    }
+
     const cleanTarget = targetVcId.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
     const reminderId = 'REM' + Date.now();
 
@@ -5963,7 +7109,9 @@ function initVoiceClockApp() {
       targetVcId: targetVcId,
       title: title,
       timeIso: new Date(dtVal).toISOString(),
+      repeat: repVal,
       repeatDays: selectedDays,
+      intervalMs: reminderIntervalMs,
       voice: voice,
       status: 'pending',
       createdAt: Date.now(),
@@ -5988,7 +7136,9 @@ function initVoiceClockApp() {
       senderVcId: vcAccount ? vcAccount.vcId : '',
       title: title,
       timeIso: newReminder.timeIso,
+      repeat: repVal,
       repeatDays: selectedDays,
+      intervalMs: reminderIntervalMs,
       voice: voice,
       createdAt: Date.now()
     };
@@ -6014,6 +7164,12 @@ function initVoiceClockApp() {
 
     // Reset inputs
     if (titleInput) titleInput.value = '';
+    if (repSelect) repSelect.value = 'once';
+    if ($('familyCustomHours')) $('familyCustomHours').value = '';
+    if ($('familyCustomMinutes')) $('familyCustomMinutes').value = '';
+    if ($('familyCustomIntervalBox')) $('familyCustomIntervalBox').style.display = 'none';
+    setSelectedDays('familyReminderDayPills', []);
+
     // Switch to Sent Reminders subview
     switchFamilySubview('subviewSentReminders');
     renderSentReminders();
@@ -6033,13 +7189,110 @@ function initVoiceClockApp() {
         senderVcId: msg.senderVcId || '',
         title: msg.title,
         timeIso: msg.timeIso,
+        repeat: msg.repeat || (msg.repeatDays && msg.repeatDays.length > 0 ? 'days' : 'once'),
         repeatDays: msg.repeatDays || [],
+        intervalMs: msg.intervalMs || null,
         voice: msg.voice || 'female_1',
         status: 'pending',
         createdAt: msg.createdAt || Date.now()
       };
       receivedReminders.push(receivedItem);
       saveReceivedReminders();
+
+      // Check if sender is in Trusted VC IDs list
+      if (isVcIdTrusted(receivedItem.senderVcId)) {
+        // AUTOMATIC ACCEPTANCE FOR TRUSTED CONTACT!
+        // No manual confirmation required: directly accepted and added to tasks history!
+        receivedItem.status = 'accepted';
+        receivedItem.autoAccepted = true;
+        receivedItem.respondedAt = Date.now();
+        saveReceivedReminders();
+
+        // Convert to native Task in receiver's normal Tasks tab
+        let taskDt = new Date(receivedItem.timeIso);
+        const now = new Date();
+        const baseH = taskDt.getHours();
+        const baseM = taskDt.getMinutes();
+        const selectedDays = receivedItem.repeatDays || [];
+        if (selectedDays.length > 0) {
+          const nextOccur = getNextOccurrenceForDays(baseH, baseM, selectedDays);
+          if (nextOccur) taskDt = nextOccur;
+        } else if (taskDt <= now) {
+          taskDt.setDate(taskDt.getDate() + 1);
+        }
+
+        const taskRepeat = receivedItem.repeat || (selectedDays.length > 0 ? 'days' : 'once');
+        const taskIntervalMs = receivedItem.intervalMs || null;
+        const newTask = {
+          id: 'TSK' + Date.now(),
+          title: receivedItem.title + (receivedItem.senderName ? ` (${receivedItem.senderName})` : ''),
+          time: taskDt,
+          baseH: baseH,
+          baseM: baseM,
+          repeat: taskRepeat,
+          repeatDays: selectedDays,
+          intervalMs: taskIntervalMs,
+          voice: receivedItem.voice || 'female_1',
+          enabled: true,
+          ringing: false,
+          snoozedUntil: null,
+          loopTimeout: null,
+          audioObj: null
+        };
+        tasks.push(newTask);
+        saveTasks();
+
+        if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
+          window.AndroidVoice.scheduleAlarm(
+            newTask.id,
+            newTask.time.getTime(),
+            newTask.title,
+            'task',
+            newTask.title,
+            newTask.voice,
+            newTask.intervalMs || 0
+          );
+        }
+        renderTasks();
+
+        addLog(isHi 
+          ? `विश्वसनीय संपर्क (${receivedItem.senderName}): रिमाइंडर कार्य "${newTask.title}" में स्वतः जुड़ा` 
+          : `Trusted contact (${receivedItem.senderName}): reminder auto-added to task "${newTask.title}"`);
+
+        // Notify sender via pub/sub that reminder was accepted!
+        sendPubSubResponse(receivedItem, 'accepted');
+
+        // Add to notifications history
+        notificationsList.unshift({
+          id: 'NOTIF' + Date.now(),
+          type: 'reminder_auto_accepted',
+          title: isHi ? `🛡️ ${receivedItem.senderName} (विश्वसनीय) से नया कार्य` : `🛡️ Task Auto-Added from ${receivedItem.senderName}`,
+          message: isHi 
+            ? `"${receivedItem.title}" आपके विश्वसनीय VC ID संपर्क से प्राप्त हुआ और सीधे आपके टास्क में जोड़ दिया गया।`
+            : `"${receivedItem.title}" from trusted contact ${receivedItem.senderName} was automatically accepted and scheduled in your Tasks.`,
+          time: Date.now(),
+          unread: true,
+          reminderId: receivedItem.id
+        });
+        saveNotifications();
+
+        // Phone status bar notification informing user
+        if (window.AndroidVoice && window.AndroidVoice.postStatusNotification) {
+          window.AndroidVoice.postStatusNotification(
+            isHi ? `🛡️ विश्वसनीय रिमाइंडर स्वतः टास्क में जुड़ा` : `🛡️ Trusted Reminder Auto-Added to Tasks`,
+            `"${receivedItem.title}" (${receivedItem.senderName})`
+          );
+        }
+
+        showPopup(isHi 
+          ? `🛡️ विश्वसनीय संपर्क (${receivedItem.senderName}): रिमाइंडर स्वतः टास्क में जोड़ा गया!`
+          : `🛡️ Trusted contact (${receivedItem.senderName}): Reminder auto-added to Tasks!`);
+
+        renderReceivedReminders();
+        renderNotifications();
+        updateReminderBadges();
+        return;
+      }
 
       // Add to notifications history
       notificationsList.unshift({
@@ -6185,7 +7438,7 @@ function initVoiceClockApp() {
   }
 
   function switchFamilySubview(subviewId) {
-    const subviews = ['subviewSendReminder', 'subviewSentReminders', 'subviewReceivedReminders', 'subviewMyAccount'];
+    const subviews = ['subviewSendReminder', 'subviewSentReminders', 'subviewReceivedReminders', 'subviewTrustedVc', 'subviewMyAccount'];
     subviews.forEach(id => {
       const el = $(id);
       if (el) el.classList.toggle('hidden', id !== subviewId);
@@ -6195,6 +7448,7 @@ function initVoiceClockApp() {
       'subviewSendReminder': { navId: 'navSendReminderBtn', titleEn: 'Send Reminder', titleHi: 'रिमाइंडर भेजें' },
       'subviewSentReminders': { navId: 'navSentRemindersBtn', titleEn: 'Sent Reminders', titleHi: 'भेजे गए रिमाइंडर' },
       'subviewReceivedReminders': { navId: 'navReceivedRemindersBtn', titleEn: 'Received Reminders', titleHi: 'प्राप्त रिमाइंडर' },
+      'subviewTrustedVc': { navId: 'navTrustedVcBtn', titleEn: 'Trusted VC IDs', titleHi: 'विश्वसनीय VC ID' },
       'subviewMyAccount': { navId: 'navMyAccountBtn', titleEn: 'My VC Account', titleHi: 'मेरा VC खाता' }
     };
 
@@ -6213,6 +7467,7 @@ function initVoiceClockApp() {
 
     if (subviewId === 'subviewSentReminders') renderSentReminders();
     if (subviewId === 'subviewReceivedReminders') renderReceivedReminders();
+    if (subviewId === 'subviewTrustedVc') renderTrustedVcList();
     if (subviewId === 'subviewMyAccount') populateAccountDisplay();
   }
 
@@ -6263,16 +7518,22 @@ function initVoiceClockApp() {
 
   // Event Listeners for Family & Notifications Views
   $('settingRemindFamilyBtn')?.addEventListener('click', () => {
+    loadVcAccount();
     if (vcAccount && vcAccount.verified) {
       populateAccountDisplay();
       renderRecentVcIds();
       renderSentReminders();
       renderReceivedReminders();
+      renderTrustedVcList();
       switchFamilySubview('subviewSendReminder');
+      $('vcAccountCreateView')?.classList.add('hidden');
+      $('vcOtpVerifyView')?.classList.add('hidden');
       $('remindFamilyHubView')?.classList.remove('hidden');
       startFamilyRealtimeSync();
     } else {
+      $('remindFamilyHubView')?.classList.add('hidden');
       $('vcAccountCreateView')?.classList.remove('hidden');
+      updateAuthVisibility();
     }
   });
 
@@ -6335,6 +7596,7 @@ function initVoiceClockApp() {
   $('navSendReminderBtn')?.addEventListener('click', () => switchFamilySubview('subviewSendReminder'));
   $('navSentRemindersBtn')?.addEventListener('click', () => switchFamilySubview('subviewSentReminders'));
   $('navReceivedRemindersBtn')?.addEventListener('click', () => switchFamilySubview('subviewReceivedReminders'));
+  $('navTrustedVcBtn')?.addEventListener('click', () => switchFamilySubview('subviewTrustedVc'));
   $('navMyAccountBtn')?.addEventListener('click', () => switchFamilySubview('subviewMyAccount'));
   $('navNotificationsBtn')?.addEventListener('click', () => {
     $('remindFamilySidebar')?.classList.add('hidden');
@@ -6345,69 +7607,457 @@ function initVoiceClockApp() {
     $('notificationsView')?.classList.remove('hidden');
   });
 
+  // Trusted VC IDs Form Handlers
+  $('btnAddTrustedVc')?.addEventListener('click', () => {
+    const isHi = userSettings.appLanguage === 'hi';
+    const idInput = $('trustedVcIdInput');
+    const nameInput = $('trustedVcNameInput');
+    let rawId = (idInput?.value || '').trim().toUpperCase();
+    const rawName = (nameInput?.value || '').trim();
+
+    if (!rawId) {
+      showPopup(isHi ? 'कृपया मान्य VC ID दर्ज करें' : 'Please enter a valid VC ID');
+      if (idInput) idInput.focus();
+      return;
+    }
+
+    if (vcAccount && rawId === vcAccount.vcId.trim().toUpperCase()) {
+      showPopup(isHi ? 'आप अपनी स्वयं की VC ID नहीं जोड़ सकते' : 'You cannot add your own VC ID as a trusted contact');
+      return;
+    }
+
+    if (trustedVcIds.some(t => (t.vcId || '').trim().toUpperCase() === rawId)) {
+      showPopup(isHi ? 'यह VC ID पहले से आपकी विश्वसनीय सूची में है' : 'This VC ID is already in your trusted list');
+      return;
+    }
+
+    const newTrusted = {
+      id: 'TID' + Date.now(),
+      vcId: rawId,
+      name: rawName || (isHi ? 'विश्वसनीय संपर्क' : 'Trusted Contact'),
+      addedAt: Date.now()
+    };
+
+    trustedVcIds.push(newTrusted);
+    saveTrustedVcIds();
+
+    if (idInput) idInput.value = '';
+    if (nameInput) nameInput.value = '';
+
+    showPopup(isHi ? `✓ ${newTrusted.name} को विश्वसनीय सूची में जोड़ा गया!` : `✓ Added ${newTrusted.name} to Trusted VC IDs!`);
+  });
+
+  $('btnPasteTrustedVcId')?.addEventListener('click', async () => {
+    const isHi = userSettings.appLanguage === 'hi';
+    try {
+      if (navigator.clipboard && navigator.clipboard.readText) {
+        const text = await navigator.clipboard.readText();
+        if (text && $('trustedVcIdInput')) {
+          $('trustedVcIdInput').value = text.trim();
+          showPopup(isHi ? 'क्लिपबोर्ड से चिपकाया गया' : 'Pasted from clipboard');
+        }
+      }
+    } catch (_) {}
+  });
+
+  // -------------------- REAL EMAIL SERVICE (BREVO) & VERIFICATION --------------------
+  window._brevoCallbacks = window._brevoCallbacks || {};
+  window.onBrevoEmailResult = function(callbackId, success, resultMessage) {
+    if (window._brevoCallbacks && typeof window._brevoCallbacks[callbackId] === 'function') {
+      window._brevoCallbacks[callbackId](success, resultMessage);
+    }
+  };
+
+  function getEmailServiceConfig() {
+    let apiKey = localStorage.getItem('vc_brevo_api_key') || '';
+    let senderEmail = localStorage.getItem('vc_brevo_sender_email') || '';
+    let senderName = localStorage.getItem('vc_brevo_sender_name') || '';
+
+    if (!apiKey && window.AndroidVoice && window.AndroidVoice.getBrevoApiKeyNative) {
+      try {
+        apiKey = window.AndroidVoice.getBrevoApiKeyNative() || '';
+        if (apiKey) localStorage.setItem('vc_brevo_api_key', apiKey);
+      } catch (e) {}
+    }
+    if (!senderEmail && window.AndroidVoice && window.AndroidVoice.getBrevoSenderEmailNative) {
+      try {
+        senderEmail = window.AndroidVoice.getBrevoSenderEmailNative() || '';
+        if (senderEmail) localStorage.setItem('vc_brevo_sender_email', senderEmail);
+      } catch (e) {}
+    }
+    if (!senderName && window.AndroidVoice && window.AndroidVoice.getBrevoSenderNameNative) {
+      try {
+        senderName = window.AndroidVoice.getBrevoSenderNameNative() || '';
+        if (senderName) localStorage.setItem('vc_brevo_sender_name', senderName);
+      } catch (e) {}
+    }
+
+    return {
+      apiKey: apiKey || '',
+      senderEmail: senderEmail || 'myadminss.businessss@gmail.com',
+      senderName: senderName || 'SevasSetus'
+    };
+  }
+
+  function saveEmailServiceConfig(apiKey, senderEmail, senderName) {
+    const finalKey = apiKey ? apiKey.trim() : '';
+    const finalEmail = senderEmail ? senderEmail.trim() : 'myadminss.businessss@gmail.com';
+    const finalName = senderName ? senderName.trim() : 'SevasSetus';
+
+    if (finalKey) localStorage.setItem('vc_brevo_api_key', finalKey);
+    else localStorage.removeItem('vc_brevo_api_key');
+
+    localStorage.setItem('vc_brevo_sender_email', finalEmail);
+    localStorage.setItem('vc_brevo_sender_name', finalName);
+
+    if (window.AndroidVoice && window.AndroidVoice.saveBrevoConfigNative) {
+      try {
+        window.AndroidVoice.saveBrevoConfigNative(finalKey, finalEmail, finalName);
+      } catch (e) {}
+    }
+
+    updateEmailConfigBadge();
+  }
+
+  function updateEmailConfigBadge() {
+    const config = getEmailServiceConfig();
+    const configBtn = $('settingEmailConfigBtn');
+    const openBtn = $('btnOpenEmailConfig');
+    const openBtnRow = openBtn ? openBtn.closest('.family-auth-toggle-row') : null;
+
+    if (config.apiKey && config.apiKey.trim()) {
+      // Configuration has been filled: remove from Settings and registration screen forever!
+      // This protects the API key and verified email so nobody else can see or modify it.
+      if (configBtn) configBtn.style.setProperty('display', 'none', 'important');
+      if (openBtnRow) openBtnRow.style.setProperty('display', 'none', 'important');
+      else if (openBtn) openBtn.style.setProperty('display', 'none', 'important');
+    } else {
+      // Unconfigured: show in Settings so the owner can fill it once
+      if (configBtn) configBtn.style.display = '';
+      if (openBtnRow) openBtnRow.style.display = '';
+      else if (openBtn) openBtn.style.display = '';
+
+      const badge = $('settingsEmailConfigBadge');
+      if (badge) {
+        const isHi = userSettings.appLanguage === 'hi';
+        badge.textContent = isHi ? 'सेटअप' : 'Setup';
+        badge.style.background = 'rgba(234, 179, 8, 0.2)';
+        badge.style.color = '#facc15';
+      }
+    }
+  }
+
+  function openEmailConfigModal() {
+    const config = getEmailServiceConfig();
+    const keyInput = $('brevoApiKeyInput');
+    const senderEmailInput = $('brevoSenderEmailInput');
+    const senderNameInput = $('brevoSenderNameInput');
+    const statusMsg = $('emailConfigStatusMsg');
+
+    if (keyInput) keyInput.value = config.apiKey;
+    if (senderEmailInput) senderEmailInput.value = config.senderEmail;
+    if (senderNameInput) senderNameInput.value = config.senderName;
+    if (statusMsg) {
+      statusMsg.classList.add('hidden');
+      statusMsg.textContent = '';
+      statusMsg.className = 'email-config-status-msg hidden';
+    }
+
+    $('emailConfigModal')?.classList.remove('hidden');
+  }
+
+  function closeEmailConfigModal() {
+    $('emailConfigModal')?.classList.add('hidden');
+  }
+
+  $('btnOpenEmailConfig')?.addEventListener('click', openEmailConfigModal);
+  $('settingEmailConfigBtn')?.addEventListener('click', openEmailConfigModal);
+  $('btnCloseEmailConfig')?.addEventListener('click', closeEmailConfigModal);
+  $('emailConfigModal')?.addEventListener('click', (e) => {
+    if (e.target === $('emailConfigModal')) closeEmailConfigModal();
+  });
+
+  // Secret admin unlock: tapping the creator's name "Ayush Kumar Singh" 5 times quickly
+  // Strictly attached to the owner's name, preventing any accidental activation from "About Voice Clock".
+  let ownerTapCount = 0;
+  let ownerTapTimer = null;
+
+  document.addEventListener('click', (e) => {
+    const ownerTarget = e.target.closest('.owner-secret-tap');
+    if (!ownerTarget) return;
+
+    ownerTapCount++;
+    if (ownerTapTimer) clearTimeout(ownerTapTimer);
+    ownerTapTimer = setTimeout(() => { ownerTapCount = 0; }, 2500);
+
+    if (ownerTapCount >= 5) {
+      ownerTapCount = 0;
+      if (ownerTapTimer) clearTimeout(ownerTapTimer);
+      if (window.AndroidInterface && typeof window.AndroidInterface.vibrate === 'function') {
+        try { window.AndroidInterface.vibrate(60); } catch (_) {}
+      }
+      openEmailConfigModal();
+    }
+  });
+
+  $('btnSaveEmailConfig')?.addEventListener('click', () => {
+    const isHi = userSettings.appLanguage === 'hi';
+    const apiKey = $('brevoApiKeyInput')?.value.trim();
+    const senderEmail = $('brevoSenderEmailInput')?.value.trim();
+    const senderName = $('brevoSenderNameInput')?.value.trim() || 'SevasSetus';
+    const statusMsg = $('emailConfigStatusMsg');
+
+    if (apiKey && !senderEmail) {
+      if (statusMsg) {
+        statusMsg.textContent = isHi ? 'कृपया Brevo में सत्यापित प्रेषक ईमेल भी दर्ज करें' : 'Please also enter your verified sender email in Brevo';
+        statusMsg.className = 'email-config-status-msg error';
+        statusMsg.classList.remove('hidden');
+      }
+      return;
+    }
+
+    saveEmailServiceConfig(apiKey, senderEmail, senderName);
+
+    if (statusMsg) {
+      statusMsg.textContent = isHi ? '✓ ईमेल सेटिंग्स सुरक्षित रूप से सहेजी गईं और सेटिंग्स से हटा दी गईं!' : '✓ Email settings saved permanently & locked from view!';
+      statusMsg.className = 'email-config-status-msg success';
+      statusMsg.classList.remove('hidden');
+    }
+
+    showPopup(isHi ? 'ईमेल सेटिंग्स सुरक्षित रूप से सहेजी गईं' : 'Email settings saved & locked');
+    setTimeout(() => {
+      closeEmailConfigModal();
+      updateEmailConfigBadge();
+    }, 700);
+  });
+
+  function sendOtpEmail(toEmail, toName, otpCode) {
+    return new Promise((resolve, reject) => {
+      const config = getEmailServiceConfig();
+      if (!config.apiKey || !config.apiKey.trim()) {
+        return reject(new Error('Brevo API key is not configured. Please tap "Email Service Settings" to add your API key.'));
+      }
+      if (!config.senderEmail || !config.senderEmail.trim()) {
+        return reject(new Error('Brevo Sender Email is not configured. Please enter the sender email verified in your Brevo account.'));
+      }
+
+      const senderEmail = config.senderEmail.trim();
+      const senderName = config.senderName ? config.senderName.trim() : 'Voice Clock';
+      const subject = `Your Voice Clock Verification Code: ${otpCode}`;
+
+      const safeName = (toName || 'User').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Voice Clock Verification Code</title>
+</head>
+<body style="margin:0;padding:24px 12px;background-color:#0b0f19;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#e2e8f0;">
+  <div style="max-width:480px;margin:0 auto;background:#131d2e;border:1px solid #1e293b;border-radius:18px;overflow:hidden;box-shadow:0 10px 25px rgba(0,0,0,0.5);">
+    <div style="background:linear-gradient(135deg, #0284c7, #38bdf8);padding:24px;text-align:center;">
+      <div style="font-size:36px;margin-bottom:6px;">⏰</div>
+      <h1 style="margin:0;font-size:22px;color:#ffffff;font-weight:800;letter-spacing:0.5px;">Voice Clock</h1>
+      <p style="margin:4px 0 0;font-size:13px;color:rgba(255,255,255,0.85);">Account Verification Protocol</p>
+    </div>
+    <div style="padding:28px 24px;text-align:center;">
+      <h2 style="margin:0 0 12px;font-size:18px;color:#ffffff;font-weight:700;">Hello ${safeName},</h2>
+      <p style="margin:0 0 20px;font-size:14px;color:#94a3b8;line-height:1.6;">
+        Welcome to Voice Clock! To verify your email address (<strong>${toEmail}</strong>) and securely link your account, enter the 8-digit verification code below:
+      </p>
+      <div style="background:#070d19;border:2px solid #0284c7;border-radius:14px;padding:16px 20px;display:inline-block;margin:6px 0 22px;">
+        <span style="font-family:'Courier New',Courier,monospace;font-size:32px;font-weight:800;letter-spacing:8px;color:#38bdf8;">${otpCode}</span>
+      </div>
+      <p style="margin:0 0 16px;font-size:12px;color:#64748b;line-height:1.5;">
+        ⏱️ This verification code is valid for <strong>10 minutes</strong>.<br>
+        If you did not request this verification, you can safely ignore this email.
+      </p>
+      <div style="margin-top:24px;padding-top:16px;border-top:1px solid #1e293b;font-size:11px;color:#475569;line-height:1.4;">
+        Voice Clock • On-Device Voice &amp; Family Care Assistant<br>
+        Created by Ayush Kumar Singh (2026)
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+
+      const callbackId = 'brevo_cb_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+
+      const timeoutId = setTimeout(() => {
+        delete window._brevoCallbacks[callbackId];
+        reject(new Error('Email request timed out. Please check your internet connection and try again.'));
+      }, 25000);
+
+      window._brevoCallbacks[callbackId] = (success, resultMsg) => {
+        clearTimeout(timeoutId);
+        delete window._brevoCallbacks[callbackId];
+        if (success) {
+          resolve(resultMsg);
+        } else {
+          let errText = resultMsg || 'Failed to send email.';
+          try {
+            const parsed = JSON.parse(resultMsg);
+            if (parsed.message) errText = parsed.message;
+          } catch (_) {}
+          reject(new Error(errText));
+        }
+      };
+
+      if (window.AndroidVoice && typeof window.AndroidVoice.sendBrevoEmail === 'function') {
+        window.AndroidVoice.sendBrevoEmail(
+          config.apiKey.trim(),
+          senderEmail,
+          senderName,
+          toEmail.trim(),
+          toName ? toName.trim() : '',
+          subject,
+          htmlContent,
+          callbackId
+        );
+      } else {
+        // Direct browser fallback fetch
+        fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: {
+            'accept': 'application/json',
+            'api-key': config.apiKey.trim(),
+            'content-type': 'application/json'
+          },
+          body: JSON.stringify({
+            sender: { name: senderName, email: senderEmail },
+            to: [{ email: toEmail.trim(), name: toName ? toName.trim() : '' }],
+            subject: subject,
+            htmlContent: htmlContent
+          })
+        })
+        .then(async res => {
+          const text = await res.text();
+          if (res.ok) {
+            clearTimeout(timeoutId);
+            delete window._brevoCallbacks[callbackId];
+            resolve(text);
+          } else {
+            clearTimeout(timeoutId);
+            delete window._brevoCallbacks[callbackId];
+            let errorMsg = `HTTP ${res.status}: ${text}`;
+            try {
+              const errJson = JSON.parse(text);
+              if (errJson.message) errorMsg = errJson.message;
+            } catch (_) {}
+            reject(new Error(errorMsg));
+          }
+        })
+        .catch(err => {
+          clearTimeout(timeoutId);
+          delete window._brevoCallbacks[callbackId];
+          reject(err);
+        });
+      }
+    });
+  }
+
   // Account Creation & Verification
-  $('btnCreateVcAccount')?.addEventListener('click', () => {
+  $('btnCreateVcAccount')?.addEventListener('click', async () => {
     const isHi = userSettings.appLanguage === 'hi';
     const nameVal = $('vcInputName')?.value.trim();
     const emailVal = $('vcInputEmail')?.value.trim();
 
     if (!nameVal) {
-      alert(isHi ? 'कृपया अपना नाम दर्ज करें' : 'Please enter your name');
+      showPopup(isHi ? 'कृपया अपना नाम दर्ज करें' : 'Please enter your name', 'deleted');
       return;
     }
-    if (!emailVal || !emailVal.includes('@')) {
-      alert(isHi ? 'कृपया मान्य ईमेल दर्ज करें' : 'Please enter a valid email address');
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailVal || !emailRegex.test(emailVal)) {
+      showPopup(isHi ? 'कृपया एक मान्य ईमेल पता दर्ज करें' : 'Please enter a valid email address', 'deleted');
       return;
+    }
+
+    const emailConfig = getEmailServiceConfig();
+    if (!emailConfig.apiKey || !emailConfig.senderEmail) {
+      showPopup(isHi ? 'ईमेल सेवा अभी सेट नहीं है। कृपया व्यवस्थापक से संपर्क करें।' : 'Email service is not configured.', 'deleted');
+      return;
+    }
+
+    const createBtn = $('btnCreateVcAccount');
+    const createBtnText = $('btnCreateVcAccountText');
+    const originalText = createBtnText ? createBtnText.textContent : 'Create Account & Send OTP';
+
+    if (createBtn) createBtn.disabled = true;
+    if (createBtnText) {
+      createBtnText.innerHTML = `<span class="spinner-inline"></span> ${isHi ? 'OTP भेजा जा रहा है...' : 'Sending real OTP...'}`;
     }
 
     const uniqueId = generateCryptographicVcId();
     const otp = generate8DigitOtp();
 
-    pendingVcAccount = {
-      name: nameVal,
-      email: emailVal,
-      vcId: uniqueId,
-      otp: otp,
-      createdAt: Date.now()
-    };
+    try {
+      await sendOtpEmail(emailVal, nameVal, otp);
 
-    const emailDisp = $('vcOtpEmailDisplay');
-    if (emailDisp) {
-      emailDisp.textContent = isHi
-        ? `सत्यापन कोड ${emailVal} पर भेजा गया है।`
-        : `Verification code sent to ${emailVal}.`;
+      pendingVcAccount = {
+        name: nameVal,
+        email: emailVal,
+        vcId: uniqueId,
+        otp: otp,
+        createdAt: Date.now(),
+        expiresAt: Date.now() + 10 * 60 * 1000 // 10 minutes valid
+      };
+
+      const emailDisp = $('vcOtpEmailDisplay');
+      if (emailDisp) {
+        emailDisp.textContent = isHi
+          ? `8-अंकीय सत्यापन कोड वास्तविक रूप से ${emailVal} पर भेज दिया गया है।`
+          : `8-digit verification code has been sent to ${emailVal}.`;
+      }
+
+      const otpInput = $('vcInputOtp');
+      if (otpInput) otpInput.value = '';
+
+      startOtpResendTimer();
+
+      $('vcAccountCreateView')?.classList.add('hidden');
+      $('vcOtpVerifyView')?.classList.remove('hidden');
+      showPopup(isHi ? `✓ OTP कोड ${emailVal} पर भेजा गया!` : `✓ OTP code sent to ${emailVal}!`);
+    } catch (err) {
+      console.error('Email dispatch error:', err);
+      const errMsg = isHi
+        ? `ईमेल भेजने में विफल: ${err.message}`
+        : `Failed to send verification email: ${err.message}`;
+      showPopup(errMsg, 'deleted');
+    } finally {
+      if (createBtn) createBtn.disabled = false;
+      if (createBtnText) createBtnText.textContent = originalText;
     }
-    const otpCodeDisp = $('vcOtpCodeDisplay');
-    if (otpCodeDisp) otpCodeDisp.textContent = otp;
-
-    const otpInput = $('vcInputOtp');
-    if (otpInput) otpInput.value = '';
-
-    startOtpResendTimer();
-
-    $('vcAccountCreateView')?.classList.add('hidden');
-    $('vcOtpVerifyView')?.classList.remove('hidden');
-    showPopup(isHi ? '8-अंकीय सत्यापन कोड भेजा गया!' : '8-digit verification code sent!');
   });
 
-  $('btnCopyDemoOtp')?.addEventListener('click', () => {
-    if (pendingVcAccount && pendingVcAccount.otp) {
-      const inp = $('vcInputOtp');
-      if (inp) inp.value = pendingVcAccount.otp;
-      showPopup(userSettings.appLanguage === 'hi' ? 'कोड स्वतः भरा गया' : 'Autofilled OTP code');
-    }
-  });
-
-  $('btnResendVcOtp')?.addEventListener('click', () => {
+  $('btnResendVcOtp')?.addEventListener('click', async () => {
     if (otpResendCountdown > 0) return;
     const isHi = userSettings.appLanguage === 'hi';
     if (!pendingVcAccount) return;
+
+    const resendBtn = $('btnResendVcOtp');
+    const resendBtnText = $('btnResendVcOtpText');
+    const originalText = resendBtnText ? resendBtnText.textContent : 'Resend OTP';
+
+    if (resendBtn) resendBtn.disabled = true;
+    if (resendBtnText) {
+      resendBtnText.innerHTML = `<span class="spinner-inline"></span> ${isHi ? 'भेजा जा रहा है...' : 'Sending...'}`;
+    }
+
     const newOtp = generate8DigitOtp();
-    pendingVcAccount.otp = newOtp;
-    const otpCodeDisp = $('vcOtpCodeDisplay');
-    if (otpCodeDisp) otpCodeDisp.textContent = newOtp;
-    startOtpResendTimer();
-    showPopup(isHi ? 'नया OTP कोड भेजा गया!' : 'New OTP code sent!');
+
+    try {
+      await sendOtpEmail(pendingVcAccount.email, pendingVcAccount.name, newOtp);
+      pendingVcAccount.otp = newOtp;
+      pendingVcAccount.expiresAt = Date.now() + 10 * 60 * 1000;
+      startOtpResendTimer();
+      showPopup(isHi ? `✓ नया OTP कोड ${pendingVcAccount.email} पर भेजा गया!` : `✓ New OTP code sent to ${pendingVcAccount.email}!`);
+    } catch (err) {
+      console.error('Resend email error:', err);
+      showPopup(isHi ? `OTP पुनः भेजने में त्रुटि: ${err.message}` : `Error resending OTP: ${err.message}`, 'deleted');
+      if (resendBtn) resendBtn.disabled = false;
+    } finally {
+      if (resendBtnText) resendBtnText.textContent = originalText;
+    }
   });
 
   $('btnVerifyVcOtp')?.addEventListener('click', () => {
@@ -6415,12 +8065,22 @@ function initVoiceClockApp() {
     const enteredOtp = $('vcInputOtp')?.value.trim();
 
     if (!enteredOtp || enteredOtp.length !== 8) {
-      alert(isHi ? 'कृपया 8-अंकीय OTP कोड दर्ज करें' : 'Please enter the 8-digit OTP code');
+      showPopup(isHi ? 'कृपया 8-अंकीय OTP कोड दर्ज करें' : 'Please enter the 8-digit OTP code', 'deleted');
       return;
     }
 
-    if (pendingVcAccount && enteredOtp !== pendingVcAccount.otp) {
-      alert(isHi ? 'अमान्य OTP कोड। कृपया पुनः प्रयास करें।' : 'Invalid OTP code. Please try again.');
+    if (!pendingVcAccount) {
+      showPopup(isHi ? 'कोई लंबित पंजीकरण नहीं मिला। कृपया पुनः खाता बनाएं।' : 'No pending registration found. Please register again.', 'deleted');
+      return;
+    }
+
+    if (pendingVcAccount.expiresAt && Date.now() > pendingVcAccount.expiresAt) {
+      showPopup(isHi ? 'OTP की समय सीमा (10 मिनट) समाप्त हो चुकी है। कृपया "दोबारा OTP भेजें" पर टैप करें।' : 'The OTP has expired (10-minute limit). Please click "Resend OTP" to receive a new code.', 'deleted');
+      return;
+    }
+
+    if (enteredOtp !== pendingVcAccount.otp) {
+      showPopup(isHi ? 'अमान्य OTP कोड। कृपया अपने ईमेल में आया 8-अंकीय कोड ही दर्ज करें।' : 'Invalid OTP code. Please enter the exact 8-digit code received in your email.', 'deleted');
       return;
     }
 
@@ -6440,8 +8100,8 @@ function initVoiceClockApp() {
       type: 'system',
       title: isHi ? 'वॉयस क्लॉक फैमिली में स्वागत है!' : 'Welcome to Voice Clock Family!',
       message: isHi
-        ? `आपकी यूनिक VC ID है: ${vcAccount.vcId}। इसे परिजनों के साथ साझा करें।`
-        : `Your unique VC ID is: ${vcAccount.vcId}. Share with loved ones to connect.`,
+        ? `आपका ईमेल सफलतापूर्वक सत्यापित हो गया है! आपकी यूनिक VC ID है: ${vcAccount.vcId}। इसे परिजनों के साथ साझा करें।`
+        : `Your email has been successfully verified! Your unique VC ID is: ${vcAccount.vcId}. Share with loved ones to connect.`,
       time: Date.now(),
       unread: true
     });
@@ -6460,17 +8120,43 @@ function initVoiceClockApp() {
   });
 
   $('linkLoginVcAccount')?.addEventListener('click', () => {
+    $('vcCreateFormSection')?.classList.add('hidden');
+    $('vcLoginFormSection')?.classList.remove('hidden');
+    const headerTitle = $('vcCreateTitle');
+    if (headerTitle) {
+      headerTitle.textContent = userSettings.appLanguage === 'hi' ? 'VC खाते में लॉग इन करें' : 'Log In to VC Account';
+    }
+  });
+
+  $('linkBackToCreateAccount')?.addEventListener('click', () => {
+    $('vcLoginFormSection')?.classList.add('hidden');
+    $('vcCreateFormSection')?.classList.remove('hidden');
+    const headerTitle = $('vcCreateTitle');
+    if (headerTitle) {
+      headerTitle.textContent = userSettings.appLanguage === 'hi' ? 'VC खाता बनाएं' : 'Create VC Account';
+    }
+  });
+
+  $('btnSubmitVcLogin')?.addEventListener('click', () => {
     const isHi = userSettings.appLanguage === 'hi';
-    const existingId = prompt(isHi ? 'अपनी मौजूदा VC ID दर्ज करें (जैसे VC-XXXX-XXXX-XXXX-XXXX):' : 'Enter your existing VC ID (e.g. VC-XXXX-XXXX-XXXX-XXXX):');
-    if (!existingId || !existingId.trim().toUpperCase().startsWith('VC-')) {
-      if (existingId) alert(isHi ? 'अमान्य VC ID प्रारूप' : 'Invalid VC ID format');
+    const idInput = $('vcLoginVcIdInput');
+    const nameInput = $('vcLoginNameInput');
+    const rawId = idInput ? idInput.value.trim().toUpperCase() : '';
+    const rawName = nameInput ? nameInput.value.trim() : '';
+
+    if (!rawId) {
+      showPopup(isHi ? 'कृपया अपनी VC ID दर्ज करें' : 'Please enter your VC ID', 'deleted');
       return;
     }
-    const userName = prompt(isHi ? 'अपना नाम दर्ज करें:' : 'Enter your name:', 'Family Member') || 'User';
+    if (!rawId.startsWith('VC-') || rawId.length < 10) {
+      showPopup(isHi ? 'अमान्य VC ID प्रारूप। VC ID "VC-" से शुरू होनी चाहिए।' : 'Invalid VC ID format. Must start with "VC-"', 'deleted');
+      return;
+    }
+
     vcAccount = {
-      name: userName.trim(),
+      name: rawName || 'User',
       email: 'restored@voiceclock.local',
-      vcId: existingId.trim().toUpperCase(),
+      vcId: rawId,
       verified: true,
       createdAt: Date.now()
     };
@@ -6480,7 +8166,7 @@ function initVoiceClockApp() {
     switchFamilySubview('subviewSendReminder');
     $('remindFamilyHubView')?.classList.remove('hidden');
     startFamilyRealtimeSync();
-    showPopup(isHi ? '✓ खाता पुनर्स्थापित हुआ' : '✓ Account restored successfully');
+    showPopup(isHi ? '✓ खाता सफलतापूर्वक लॉग इन हुआ!' : '✓ Account successfully logged in!');
   });
 
   $('btnCopyAccountVcId')?.addEventListener('click', () => {
@@ -6534,7 +8220,7 @@ function initVoiceClockApp() {
 
   $('btnLogoutAccount')?.addEventListener('click', () => {
     const isHi = userSettings.appLanguage === 'hi';
-    if (confirm(isHi ? 'क्या आप खाता बदलना या लॉग आउट करना चाहते हैं?' : 'Are you sure you want to log out or switch account?')) {
+    if (confirm(isHi ? 'क्या आप खाता लॉग आउट करना चाहते हैं?' : 'Are you sure you want to log out of your account?')) {
       vcAccount = null;
       saveVcAccount();
       if (familySyncEventSource) {
@@ -6543,6 +8229,13 @@ function initVoiceClockApp() {
       }
       $('remindFamilyHubView')?.classList.add('hidden');
       $('vcAccountCreateView')?.classList.remove('hidden');
+      $('vcCreateFormSection')?.classList.remove('hidden');
+      $('vcLoginFormSection')?.classList.add('hidden');
+      const headerTitle = $('vcCreateTitle');
+      if (headerTitle) {
+        headerTitle.textContent = isHi ? 'VC खाता बनाएं' : 'Create VC Account';
+      }
+      showPopup(isHi ? 'खाता लॉग आउट हो गया' : 'Logged out successfully');
     }
   });
 
@@ -6571,6 +8264,15 @@ function initVoiceClockApp() {
     });
   });
 
+  // Toggle custom repetition box for family reminder
+  const familyRepeatSelect = $('familyRepeatSelect');
+  const familyCustomBox = $('familyCustomIntervalBox');
+  familyRepeatSelect?.addEventListener('change', () => {
+    if (familyCustomBox) {
+      familyCustomBox.style.display = familyRepeatSelect.value === 'custom' ? 'block' : 'none';
+    }
+  });
+
   // Setup day pills for family reminder
   setupDayPillsRow('familyReminderDayPills');
 
@@ -6586,14 +8288,31 @@ function initVoiceClockApp() {
   $('btnSendFamilyReminder')?.addEventListener('click', sendFamilyReminder);
 
   // Initialize badges & realtime sync if user already logged in
+  loadVcAccount();
   updateFamilySettingsBadge();
+  updateEmailConfigBadge();
   updateNotificationBadges();
   updateReminderBadges();
   renderRecentVcIds();
+  renderTrustedVcList();
+  updateAuthVisibility();
   if (vcAccount && vcAccount.verified) {
     populateAccountDisplay();
     startFamilyRealtimeSync();
   }
+
+  // Backup check when Android native bridge is ready
+  setTimeout(() => {
+    if (!vcAccount) {
+      loadVcAccount();
+      if (vcAccount && vcAccount.verified) {
+        populateAccountDisplay();
+        startFamilyRealtimeSync();
+        updateFamilySettingsBadge();
+        updateAuthVisibility();
+      }
+    }
+  }, 350);
 
   // Pre-fill datetime picker to +1 hour from now
   const nowOneHour = new Date(Date.now() + 3600000);

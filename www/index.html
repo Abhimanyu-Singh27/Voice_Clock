@@ -414,9 +414,11 @@
       <div class="card">
         <div class="voice-controls-bar">
           <div class="voice-control-item">
-            <label for="voiceLangSelect" id="voiceLangLabel" class="sub" style="display:block;margin-bottom:6px;">Language:</label>
+            <label for="voiceLangSelect" id="voiceLangLabel" class="sub" style="display:block;margin-bottom:6px;">Language / भाषा:</label>
             <select id="voiceLangSelect" class="option-bgc">
-              <option value="en-IN" selected>English (India)</option>
+              <option value="bilingual" selected>Auto (Hindi + English) / दोनों</option>
+              <option value="hi-IN">हिन्दी (Hindi)</option>
+              <option value="en-IN">English (India)</option>
               <option value="en-US">English (US)</option>
             </select>
           </div>
@@ -426,8 +428,8 @@
               <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
             </svg>
             <div class="privacy-text">
-              <strong id="voiceAssistantActiveHeading">Voice Assistant Active (Screen-On)</strong>
-              <p id="voiceAssistantActiveDesc">Speak in English while screen is on. Say "Set alarm at 7 AM" or "Stop alarm".</p>
+              <strong id="voiceAssistantActiveHeading">Voice Assistant Active (App Open)</strong>
+              <p id="voiceAssistantActiveDesc">Directly speak in Hindi or English while the app is open. Say "Hey VC 7 baje ka alarm lagao" or "Hey VC set alarm at 7 AM".</p>
             </div>
           </div>
         </div>
@@ -444,18 +446,18 @@
           </button>
         </div>
 
-        <div id="voiceCmdStatus" class="voice-status-box">Tap the microphone button to give a voice command</div>
+        <div id="voiceCmdStatus" class="voice-status-box">Directly say "Hey VC..." or tap the microphone button</div>
 
         <div class="command-hints">
-          <h4 id="voiceTrySayingHeading" style="margin:20px 0 10px;">Try saying:</h4>
+          <h4 id="voiceTrySayingHeading" style="margin:20px 0 10px;">Try saying / बोलकर देखें:</h4>
           <div class="hint-chips" id="voiceHintChips">
-            <span class="hint-chip">"Set alarm at 7:00 AM"</span>
-            <span class="hint-chip">"Set alarm at 8:00 PM for meeting"</span>
-            <span class="hint-chip">"Set alarm at 7:00 AM for study"</span>
-            <span class="hint-chip">"Create task for study at 7:00 PM"</span>
-            <span class="hint-chip">"Remind me to take medicine at 8:30 PM"</span>
-            <span class="hint-chip">"Stop alarm"</span>
-            <span class="hint-chip">"Snooze alarm"</span>
+            <span class="hint-chip">"Hey VC 7 baje ka alarm lagao"</span>
+            <span class="hint-chip">"Hey VC set alarm at 7:00 AM"</span>
+            <span class="hint-chip">"Hey VC 8 baje medicine lene ka task banao"</span>
+            <span class="hint-chip">"Hey VC remind me to take medicine at 8:30 PM"</span>
+            <span class="hint-chip">"Hey VC time kya ho raha hai?"</span>
+            <span class="hint-chip">"Hey VC stop alarm"</span>
+            <span class="hint-chip">"Hey VC snooze alarm"</span>
           </div>
         </div>
       </div>
@@ -697,6 +699,19 @@
           </svg>
         </div>
 
+        <div class="setting-item clickable" id="settingEmailConfigBtn">
+          <div class="setting-text">
+            <div class="setting-label" style="display:flex;align-items:center;gap:8px;">
+              <span id="settingEmailConfigLabel">Email Service (Brevo API)</span>
+              <span id="settingsEmailConfigBadge" class="about-update-pill family-status-pill">Active</span>
+            </div>
+            <div class="setting-sub" id="settingEmailConfigSub">Configure API key for real verification OTP emails</div>
+          </div>
+          <svg class="chevron-svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+            <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
+          </svg>
+        </div>
+
         <!-- Section: About -->
         <div class="settings-section-title" id="secAboutTitle">About Voice Clock</div>
 
@@ -788,7 +803,7 @@
 
           <div class="about-info-row">
             <span class="about-info-label" id="aboutOwnerLabel">Owner &amp; Creator</span>
-            <span class="about-info-val highlight-owner" id="aboutOwnerVal">Ayush Kumar Singh</span>
+            <span class="about-info-val highlight-owner owner-secret-tap" id="aboutOwnerVal">Ayush Kumar Singh</span>
           </div>
 
           <div class="about-info-row">
@@ -1087,22 +1102,49 @@
         </div>
 
         <div class="card family-auth-card">
-          <div class="family-input-group">
-            <label class="family-input-label" id="lblVcName" for="vcInputName">Your Name:</label>
-            <input type="text" id="vcInputName" class="family-text-input adjstwdth" placeholder="e.g. Papa, Beta, Ayush" autocomplete="name" required>
+          <!-- CREATE ACCOUNT SECTION -->
+          <div id="vcCreateFormSection">
+            <div class="family-input-group">
+              <label class="family-input-label" id="lblVcName" for="vcInputName">Your Name:</label>
+              <input type="text" id="vcInputName" class="family-text-input adjstwdth" placeholder="e.g. Papa, Beta, Ayush" autocomplete="name" required>
+            </div>
+
+            <div class="family-input-group">
+              <label class="family-input-label" id="lblVcEmail" for="vcInputEmail">Email Address (for verification):</label>
+              <input type="email" id="vcInputEmail" class="family-text-input adjstwdth" placeholder="e.g. name@example.com" autocomplete="email" required>
+            </div>
+
+            <button id="btnCreateVcAccount" class="btn primary-btn family-submit-btn" type="button">
+              <span id="btnCreateVcAccountText">Create Account &amp; Send OTP</span>
+            </button>
+
+            <div class="family-auth-toggle-row">
+              <button id="linkLoginVcAccount" class="family-link-btn" type="button">Already have a VC ID? Log In / Restore Account</button>
+            </div>
+            <div class="family-auth-toggle-row" style="margin-top: 8px;">
+              <button id="btnOpenEmailConfig" class="family-link-btn email-config-link" type="button">⚙ Email Service Settings (Brevo)</button>
+            </div>
           </div>
 
-          <div class="family-input-group">
-            <label class="family-input-label" id="lblVcEmail" for="vcInputEmail">Email Address (for verification):</label>
-            <input type="email" id="vcInputEmail" class="family-text-input adjstwdth" placeholder="e.g. name@example.com" autocomplete="email" required>
-          </div>
+          <!-- LOG IN SECTION -->
+          <div id="vcLoginFormSection" class="hidden">
+            <div class="family-input-group">
+              <label class="family-input-label" id="lblLoginVcId" for="vcLoginVcIdInput">Your Existing VC ID:</label>
+              <input type="text" id="vcLoginVcIdInput" class="family-text-input monospace-input adjstwdth" placeholder="e.g. VC-XXXX-XXXX-XXXX-XXXX" autocomplete="off" required>
+            </div>
 
-          <button id="btnCreateVcAccount" class="btn primary-btn family-submit-btn" type="button">
-            <span id="btnCreateVcAccountText">Create Account &amp; Send OTP</span>
-          </button>
+            <div class="family-input-group">
+              <label class="family-input-label" id="lblLoginUserName" for="vcLoginNameInput">Your Name:</label>
+              <input type="text" id="vcLoginNameInput" class="family-text-input adjstwdth" placeholder="e.g. Papa, Ayush" autocomplete="name">
+            </div>
 
-          <div class="family-auth-toggle-row">
-            <button id="linkLoginVcAccount" class="family-link-btn" type="button">Already have a VC ID? Restore Account</button>
+            <button id="btnSubmitVcLogin" class="btn primary-btn family-submit-btn" type="button">
+              <span id="btnSubmitVcLoginText">Log In to Account</span>
+            </button>
+
+            <div class="family-auth-toggle-row">
+              <button id="linkBackToCreateAccount" class="family-link-btn" type="button">New User? Create Account &amp; Get VC ID</button>
+            </div>
           </div>
         </div>
       </div>
@@ -1131,11 +1173,17 @@
         </div>
 
         <div class="card family-auth-card">
-          <!-- Active Demo / Test helper banner for zero-friction testing -->
-          <div id="vcOtpDemoBanner" class="vc-otp-demo-card">
-            <span class="otp-hint-badge">LIVE OTP CODE</span>
-            <div class="otp-hint-code" id="vcOtpCodeDisplay">--------</div>
-            <button type="button" id="btnCopyDemoOtp" class="btn-copy-otp">Tap to Autofill</button>
+          <!-- Real Email Delivery Status Card -->
+          <div id="vcOtpEmailStatusCard" class="vc-otp-status-card">
+            <div class="otp-status-icon">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="#38bdf8">
+                <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+              </svg>
+            </div>
+            <div class="otp-status-text-wrap">
+              <div class="otp-status-heading" id="otpStatusHeading">OTP Sent to Email</div>
+              <div class="otp-status-desc" id="otpStatusDesc">Check your inbox and spam folder for the 8-digit verification code.</div>
+            </div>
           </div>
 
           <div class="family-input-group">
@@ -1151,7 +1199,7 @@
               <span id="btnResendVcOtpText">Resend OTP</span>
             </button>
           </div>
-          <div id="otpTimerDisplay" class="otp-timer-sub">Resend available in 60s</div>
+          <div id="otpTimerDisplay" class="otp-timer-sub">Resend available in 30s</div>
         </div>
       </div>
     </div>
@@ -1209,6 +1257,11 @@
             <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 3H4.99c-1.11 0-1.98.89-1.98 2L3 19c0 1.1.88 2 1.99 2H19c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 12h-4c0 1.66-1.35 3-3 3s-3-1.34-3-3H4.99V5H19v10z"/></svg>
             <span id="navReceivedRemindersText">Received Reminders</span>
             <span id="badgeReceivedCount" class="sidebar-badge-count">0</span>
+          </button>
+          <button type="button" id="navTrustedVcBtn" class="sidebar-nav-item">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
+            <span id="navTrustedVcText">Trusted VC IDs</span>
+            <span id="badgeTrustedCount" class="sidebar-badge-count">0</span>
           </button>
           <button type="button" id="navMyAccountBtn" class="sidebar-nav-item">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
@@ -1273,6 +1326,24 @@
               <input type="datetime-local" id="reminderDateTimeInput" class="adjstwdth">
             </div>
 
+            <!-- Repetition Time / Interval -->
+            <div class="family-input-group">
+              <label class="family-input-label" id="lblFamilyRepeat" for="familyRepeatSelect">Repetition Time (Optional):</label>
+              <select id="familyRepeatSelect" class="option-bgc adjstwdth">
+                <option class="option-bgc" value="once">Once (Default 10m Snooze)</option>
+                <option class="option-bgc" value="1 min">Every 1 min</option>
+                <option class="option-bgc" value="5 min">Every 5 min</option>
+                <option class="option-bgc" value="10 min">Every 10 min</option>
+                <option class="option-bgc" value="1 hr">Every 1 hour</option>
+                <option class="option-bgc" value="5 hr">Every 5 hours</option>
+                <option class="option-bgc" value="custom">Custom Time Interval</option>
+              </select>
+              <div id="familyCustomIntervalBox" style="display:none; margin-top:10px;">
+                <input id="familyCustomHours" type="number" placeholder="Hours" min="0" class="family-text-input adjstwdth">
+                <input id="familyCustomMinutes" type="number" placeholder="Minutes (Optional)" min="0" class="family-text-input adjstwdth" style="margin-top:6px;">
+              </div>
+            </div>
+
             <!-- Repeat Days -->
             <div class="repeat-days-group" id="familyRepeatDaysGroup">
               <label class="repeat-days-label" id="familyRepeatDaysLabel">Repeat on Days (Optional):</label>
@@ -1333,6 +1404,49 @@
           </div>
           <div id="receivedRemindersList" class="reminders-list-container">
             <!-- Dynamic received reminders -->
+          </div>
+        </section>
+
+        <!-- SUBVIEW: TRUSTED VC IDS -->
+        <section id="subviewTrustedVc" class="hub-subview hidden">
+          <div class="card form-card family-form-card">
+            <div class="subview-header">
+              <h3 id="trustedVcHeading">Trusted VC IDs</h3>
+              <p id="trustedVcSub">Add VC IDs of your loved ones and trusted contacts. Reminders from them will be automatically accepted and scheduled in your Tasks without manual approval.</p>
+            </div>
+
+            <!-- Add Trusted VC ID Form -->
+            <div class="family-input-group">
+              <div class="label-with-action">
+                <label class="family-input-label" id="lblAddTrustedVcId" for="trustedVcIdInput">Trusted VC ID:</label>
+                <button type="button" id="btnPasteTrustedVcId" class="btn-text-action">Paste</button>
+              </div>
+              <input type="text" id="trustedVcIdInput" class="family-text-input adjstwdth monospace-input" placeholder="e.g. VC-8K2M-9P4W-7N1Q-3X5R" autocomplete="off">
+            </div>
+
+            <div class="family-input-group">
+              <label class="family-input-label" id="lblTrustedVcName" for="trustedVcNameInput">Name / Relationship (Optional):</label>
+              <input type="text" id="trustedVcNameInput" class="family-text-input adjstwdth" placeholder="e.g. Maa, Papa, Sister, Rahul">
+            </div>
+
+            <button id="btnAddTrustedVc" class="btn primary-btn send-reminder-btn" type="button">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+              <span id="btnAddTrustedVcText">Add to Trusted Contacts</span>
+            </button>
+          </div>
+
+          <!-- Trust Auto-Approval Guarantee Card -->
+          <div class="vc-security-card" style="margin-top:14px;border-left:3px solid #10b981;">
+            <h4>🛡️ Auto-Approval Active</h4>
+            <p id="trustedVcGuaranteeDesc">Whenever a reminder is sent by any of these trusted contacts, Voice Clock automatically verifies the VC ID, accepts it without prompting for approval, and immediately schedules it in your Tasks.</p>
+          </div>
+
+          <!-- Saved List Header & Container -->
+          <div class="subview-header" style="margin-top:20px;">
+            <h4 style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:4px;" id="trustedListHeading">Saved Trusted Contacts</h4>
+          </div>
+          <div id="trustedVcListContainer" class="reminders-list-container">
+            <!-- Dynamic Trusted VC IDs cards -->
           </div>
         </section>
 
@@ -1439,6 +1553,51 @@
       </div>
     </div>
 
+    <!-- ================= EMAIL CONFIG MODAL (BREVO) ================= -->
+    <div id="emailConfigModal" class="options-modal-backdrop hidden">
+      <div class="options-modal-card email-config-modal-card">
+        <div class="options-modal-drag-pill"></div>
+        <div class="options-modal-header">
+          <h3 id="emailConfigModalTitle">Email Service Settings</h3>
+          <p class="options-modal-sub" id="emailConfigModalSub">Brevo (Sendinblue) REST API for authentic OTP delivery</p>
+        </div>
+
+        <div class="email-config-intro-card">
+          <div class="email-config-badge">📧 300 Free Emails / Day</div>
+          <p class="email-config-intro-p" id="emailConfigIntroP">
+            To ensure genuine user verification, Voice Clock delivers 8-digit OTP codes directly to user emails using the Brevo REST API. Enter your Brevo API key and verified sender email below.
+          </p>
+          <a href="https://app.brevo.com/settings/keys/api" target="_blank" class="email-config-help-link" id="emailConfigGetApiKeyLink">
+            Get your free Brevo API Key from brevo.com ↗
+          </a>
+        </div>
+
+        <div class="email-config-form">
+          <div class="family-input-group">
+            <label class="family-input-label" id="lblBrevoApiKey" for="brevoApiKeyInput">Brevo API Key (xkeysib-...):</label>
+            <input type="password" id="brevoApiKeyInput" class="family-text-input monospace-input adjstwdth" placeholder="xkeysib-..." autocomplete="off">
+          </div>
+
+          <div class="family-input-group">
+            <label class="family-input-label" id="lblBrevoSenderEmail" for="brevoSenderEmailInput">Sender Email (verified in Brevo):</label>
+            <input type="email" id="brevoSenderEmailInput" class="family-text-input adjstwdth" placeholder="e.g. your-email@gmail.com" autocomplete="email">
+          </div>
+
+          <div class="family-input-group">
+            <label class="family-input-label" id="lblBrevoSenderName" for="brevoSenderNameInput">Sender Name:</label>
+            <input type="text" id="brevoSenderNameInput" class="family-text-input adjstwdth" placeholder="Voice Clock" value="Voice Clock">
+          </div>
+
+          <div id="emailConfigStatusMsg" class="email-config-status-msg hidden"></div>
+        </div>
+
+        <div class="options-modal-actions" style="display:flex;gap:10px;margin-top:16px;">
+          <button id="btnCloseEmailConfig" class="options-cancel-btn" style="flex:1;" type="button">Cancel</button>
+          <button id="btnSaveEmailConfig" class="sw-btn start-btn" style="flex:1.5;margin:0;" type="button">Save Settings</button>
+        </div>
+      </div>
+    </div>
+
     <!-- ================= LOCATION PRIVACY MODAL ================= -->
     <div id="locationPrivacyModal" class="options-modal-backdrop hidden">
       <div class="options-modal-card" style="max-width:380px;">
@@ -1475,7 +1634,7 @@
           <p><strong>2. Local Speech Recognition:</strong> Voice commands are analyzed directly on your device using native speech recognizers.</p>
           <p><strong>3. Location Privacy:</strong> When automatic time zone detection is enabled, geolocation coordinates are used strictly in local memory to match timezone offsets and are discarded immediately.</p>
           <p><strong>4. Battery Efficiency:</strong> Voice Clock automatically shuts down microphone listeners when your device screen turns off, saving battery.</p>
-          <p><strong>5. Created By:</strong> Ayush Kumar Singh (2026).</p>
+          <p><strong>5. Created By:</strong> <span class="owner-secret-tap">Ayush Kumar Singh</span> (2026).</p>
         </div>
         <button id="closePrivacyModalBtn" class="options-cancel-btn" style="flex-shrink:0;" type="button">Close</button>
       </div>
