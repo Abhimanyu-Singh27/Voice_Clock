@@ -6,6 +6,7 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.util.Log;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -21,6 +22,7 @@ public class AlarmPreferences {
     public static class SavedAlarm {
         public String id;
         public long triggerTime;
+        public long snoozedUntil;
         public String label;
         public String type;
         public String text;
@@ -92,12 +94,64 @@ public class AlarmPreferences {
             for (int i = 0; i < arr.length(); i++) {
                 JSONObject obj = arr.getJSONObject(i);
                 if (id.equals(obj.optString("id"))) {
-                    obj.put("triggerTime", newTriggerTime);
+                    // Do NOT overwrite triggerTime! Preserve the original set time.
+                    obj.put("snoozedUntil", newTriggerTime);
                 }
                 newArr.put(obj);
             }
 
-            prefs.edit().putString(KEY_ALARMS, newArr.toString()).apply();
+            // Un-blacklist if present in deleted list so snooze trigger is guaranteed active
+            String deletedJson = prefs.getString(KEY_DELETED_ALARMS, "[]");
+            JSONArray delArr = new JSONArray(deletedJson);
+            JSONArray newDelArr = new JSONArray();
+            for (int i = 0; i < delArr.length(); i++) {
+                String dId = delArr.optString(i);
+                if (!id.equals(dId)) {
+                    newDelArr.put(dId);
+                }
+            }
+
+            prefs.edit()
+                    .putString(KEY_ALARMS, newArr.toString())
+                    .putString(KEY_DELETED_ALARMS, newDelArr.toString())
+                    .apply();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static synchronized void updateAlarmTrigger(Context context, String id, long nextTriggerTime) {
+        if (context == null || id == null) return;
+        try {
+            SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+            String jsonStr = prefs.getString(KEY_ALARMS, "[]");
+            JSONArray arr = new JSONArray(jsonStr);
+
+            JSONArray newArr = new JSONArray();
+            for (int i = 0; i < arr.length(); i++) {
+                JSONObject obj = arr.getJSONObject(i);
+                if (id.equals(obj.optString("id"))) {
+                    obj.put("triggerTime", nextTriggerTime);
+                    obj.remove("snoozedUntil");
+                }
+                newArr.put(obj);
+            }
+
+            // Un-blacklist if present in deleted list
+            String deletedJson = prefs.getString(KEY_DELETED_ALARMS, "[]");
+            JSONArray delArr = new JSONArray(deletedJson);
+            JSONArray newDelArr = new JSONArray();
+            for (int i = 0; i < delArr.length(); i++) {
+                String dId = delArr.optString(i);
+                if (!id.equals(dId)) {
+                    newDelArr.put(dId);
+                }
+            }
+
+            prefs.edit()
+                    .putString(KEY_ALARMS, newArr.toString())
+                    .putString(KEY_DELETED_ALARMS, newDelArr.toString())
+                    .apply();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -284,6 +338,106 @@ public class AlarmPreferences {
         }
     }
 
+    public static void scheduleAlarmClock(
+            Context context,
+            String alarmId,
+            long triggerAtMillis,
+            String label,
+            String type,
+            String text,
+            String voice,
+            long intervalMs
+    ) {
+        if (context == null || alarmId == null || alarmId.trim().isEmpty()) return;
+        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        if (alarmManager == null) return;
+
+        long physicalTrigger = triggerAtMillis;
+        if (isManualTimeEnabled(context)) {
+            physicalTrigger -= getManualTimeOffset(context);
+        }
+
+        final String selectedVoice = (voice != null && !voice.trim().isEmpty()) ? voice : "female_1";
+        int reqCode = alarmId.hashCode();
+
+        Intent showIntent = new Intent(context, AlarmActivity.class);
+        showIntent.setAction("com.voiceclock.vc.ACTION_ALARM_SHOW_" + alarmId);
+        showIntent.putExtra("alarmId", alarmId);
+        showIntent.putExtra("label", label);
+        showIntent.putExtra("type", type);
+        showIntent.putExtra("text", text);
+        showIntent.putExtra("voice", selectedVoice);
+        showIntent.putExtra("mode", "task".equals(type) ? "task" : "alarm");
+        showIntent.putExtra("intervalMs", intervalMs);
+        showIntent.addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK
+                        | Intent.FLAG_ACTIVITY_CLEAR_TOP
+                        | Intent.FLAG_ACTIVITY_SINGLE_TOP
+                        | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+        );
+
+        android.os.Bundle optionsBundle = null;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            android.app.ActivityOptions options = android.app.ActivityOptions.makeBasic();
+            options.setPendingIntentCreatorBackgroundActivityStartMode(android.app.ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED);
+            options.setPendingIntentBackgroundActivityStartMode(android.app.ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED);
+            optionsBundle = options.toBundle();
+        }
+
+        PendingIntent showPi = PendingIntent.getActivity(
+                context,
+                reqCode,
+                showIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE,
+                optionsBundle
+        );
+
+        Intent broadcastIntent = new Intent(context, AlarmReceiver.class);
+        broadcastIntent.setAction("com.voiceclock.vc.ACTION_ALARM_TRIGGER_" + alarmId);
+        broadcastIntent.setPackage(context.getPackageName());
+        broadcastIntent.putExtra("alarmId", alarmId);
+        broadcastIntent.putExtra("label", label);
+        broadcastIntent.putExtra("type", type);
+        broadcastIntent.putExtra("text", text);
+        broadcastIntent.putExtra("voice", selectedVoice);
+        broadcastIntent.putExtra("mode", "task".equals(type) ? "task" : "alarm");
+        broadcastIntent.putExtra("intervalMs", intervalMs);
+
+        PendingIntent broadcastPi = PendingIntent.getBroadcast(
+                context,
+                reqCode,
+                broadcastIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                AlarmManager.AlarmClockInfo clockInfo = new AlarmManager.AlarmClockInfo(physicalTrigger, showPi);
+                alarmManager.setAlarmClock(clockInfo, broadcastPi);
+            } else {
+                alarmManager.setExact(AlarmManager.RTC_WAKEUP, physicalTrigger, broadcastPi);
+            }
+        } catch (SecurityException se) {
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, physicalTrigger, broadcastPi);
+                } else {
+                    alarmManager.setExact(AlarmManager.RTC_WAKEUP, physicalTrigger, broadcastPi);
+                }
+            } catch (Exception e1) {
+                try {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, physicalTrigger, broadcastPi);
+                    } else {
+                        alarmManager.set(AlarmManager.RTC_WAKEUP, physicalTrigger, broadcastPi);
+                    }
+                } catch (Exception e2) {
+                    alarmManager.set(AlarmManager.RTC_WAKEUP, physicalTrigger, broadcastPi);
+                }
+            }
+        }
+    }
+
     public static synchronized String getAlarmsJson(Context context) {
         SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         return prefs.getString(KEY_ALARMS, "[]");
@@ -329,6 +483,7 @@ public class AlarmPreferences {
                 SavedAlarm a = new SavedAlarm();
                 a.id = obj.optString("id");
                 a.triggerTime = obj.optLong("triggerTime");
+                a.snoozedUntil = obj.optLong("snoozedUntil", 0);
                 a.label = obj.optString("label");
                 a.type = obj.optString("type");
                 a.text = obj.optString("text");

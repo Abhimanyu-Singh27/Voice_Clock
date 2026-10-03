@@ -271,34 +271,9 @@ public class AlarmService extends Service {
                 Log.e("VOICE_CLOCK", "Failed to play chosen audio file", e);
             }
         } else {
-            // Voice / TTS / Default alarm:
-            // 1. Immediately start MediaPlayer with alarm chime / sound so ringing starts with ZERO delay!
-            try {
-                mediaPlayer = MediaPlayer.create(this, R.raw.alarm_sound);
-                if (mediaPlayer == null) {
-                    Uri defaultUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
-                    if (defaultUri == null) {
-                        defaultUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-                    }
-                    mediaPlayer = MediaPlayer.create(this, defaultUri);
-                }
-                if (mediaPlayer != null) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                        mediaPlayer.setAudioAttributes(new AudioAttributes.Builder()
-                                .setUsage(AudioAttributes.USAGE_ALARM)
-                                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                                .build());
-                    }
-                    mediaPlayer.setLooping(true);
-                    mediaPlayer.setVolume(currentVolume, currentVolume);
-                    mediaPlayer.start();
-                    Log.d("VOICE_CLOCK", "Instant alarm ringtone started without delay");
-                }
-            } catch (Exception e) {
-                Log.w("VOICE_CLOCK", "Could not start instant alarm ringtone", e);
-            }
+            // Voice / TTS / Default alarm: speak directly with clean TTS without pre-roll chime/audio overlap
+            mediaPlayer = null;
 
-            // 2. Speak Text-To-Speech voice text with background sound ducking
             final String speakText =
                     (text == null || text.trim().isEmpty())
                             ? ((label == null || label.trim().isEmpty()) ? "Alarm" : label)

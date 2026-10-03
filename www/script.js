@@ -4133,9 +4133,7 @@ function initVoiceClockApp() {
     if (window.AndroidVoice && window.AndroidVoice.stopAlarmService) {
       window.AndroidVoice.stopAlarmService();
     }
-    if (window.AndroidVoice && window.AndroidVoice.cancelAlarm) {
-      window.AndroidVoice.cancelAlarm(alarmId);
-    }
+    // DO NOT call cancelAlarm: snooze is temporary rescheduling, not deletion!
 
     const snoozeMins = (al.intervalMs && al.intervalMs > 0)
       ? Math.max(1, Math.round(al.intervalMs / 60000))
@@ -4143,20 +4141,10 @@ function initVoiceClockApp() {
     const snoozeTime = Date.now() + (snoozeMins * 60 * 1000);
     al.ringing = false;
     al.snoozedUntil = snoozeTime;
+    // al.time is preserved untouched so alarm cards and next day triggers keep the original set time!
     al.enabled = true;
     saveAlarms();
 
-    if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
-      window.AndroidVoice.scheduleAlarm(
-        al.id,
-        snoozeTime,
-        al.label,
-        al.mode,
-        al.ttsText,
-        al.voice || 'female_1',
-        al.intervalMs || 0
-      );
-    }
     if (window.AndroidVoice && window.AndroidVoice.syncAlarmSnooze) {
       window.AndroidVoice.syncAlarmSnooze(al.id, snoozeTime);
     }
@@ -4179,9 +4167,7 @@ function initVoiceClockApp() {
     if (window.AndroidVoice && window.AndroidVoice.stopAlarmService) {
       window.AndroidVoice.stopAlarmService();
     }
-    if (window.AndroidVoice && window.AndroidVoice.cancelAlarm) {
-      window.AndroidVoice.cancelAlarm(alarmId);
-    }
+    // DO NOT call cancelAlarm: dismiss stops today's ring and reschedules for tomorrow!
     if (window.AndroidVoice && window.AndroidVoice.syncAlarmDismiss) {
       window.AndroidVoice.syncAlarmDismiss(alarmId);
     }
@@ -4213,14 +4199,8 @@ function initVoiceClockApp() {
       } else {
         advanceAlarmToNextRepeatDay(al);
       }
-      if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
-        window.AndroidVoice.scheduleAlarm(al.id, al.time.getTime(), al.label, al.mode, al.ttsText, al.voice || 'female_1', al.intervalMs || 0);
-      }
     } else if (hasDays) {
       advanceAlarmToNextRepeatDay(al);
-      if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
-        window.AndroidVoice.scheduleAlarm(al.id, al.time.getTime(), al.label, al.mode, al.ttsText, al.voice || 'female_1', al.intervalMs || 0);
-      }
     } else if (hasInterval) {
       let interval = 60000;
       if (al.repeat === 'custom' && al.intervalMs) {
@@ -4241,14 +4221,19 @@ function initVoiceClockApp() {
       }
       al.time = nextTime;
       al.enabled = true;
-      if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
-        window.AndroidVoice.scheduleAlarm(al.id, al.time.getTime(), al.label, al.mode, al.ttsText, al.voice || 'female_1', al.intervalMs || 0);
-      }
     } else {
-      al.enabled = false;
-      if (window.AndroidVoice && window.AndroidVoice.cancelAlarm) {
-        window.AndroidVoice.cancelAlarm(al.id);
-      }
+      // Standard / daily / once alarm: advance to tomorrow at exact same hour:minute (standard clock app behavior)
+      const d = new Date(al.time);
+      const targetH = typeof al.baseH === 'number' ? al.baseH : d.getHours();
+      const targetM = typeof al.baseM === 'number' ? al.baseM : d.getMinutes();
+      const now = new Date();
+      const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, targetH, targetM, 0, 0);
+      al.time = tomorrow;
+      al.enabled = true;
+    }
+
+    if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
+      window.AndroidVoice.scheduleAlarm(al.id, al.time.getTime(), al.label, al.mode, al.ttsText, al.voice || 'female_1', al.intervalMs || 0);
     }
 
     saveAlarms();
@@ -4816,9 +4801,7 @@ function initVoiceClockApp() {
     if (window.AndroidVoice && window.AndroidVoice.stopAlarmService) {
       window.AndroidVoice.stopAlarmService();
     }
-    if (window.AndroidVoice && window.AndroidVoice.cancelAlarm) {
-      window.AndroidVoice.cancelAlarm(taskId);
-    }
+    // DO NOT call cancelAlarm: snooze is temporary rescheduling, not deletion!
 
     const snoozeMins = (t.intervalMs && t.intervalMs > 0)
       ? Math.max(1, Math.round(t.intervalMs / 60000))
@@ -4826,12 +4809,10 @@ function initVoiceClockApp() {
     const snoozeTime = Date.now() + (snoozeMins * 60 * 1000);
     t.ringing = false;
     t.snoozedUntil = snoozeTime;
+    // t.time is preserved untouched so task cards keep their original set time!
     t.enabled = true;
     saveTasks();
 
-    if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
-      window.AndroidVoice.scheduleAlarm(t.id, snoozeTime, t.title, 'task', t.title, t.voice || 'female_1', t.intervalMs || 0);
-    }
     if (window.AndroidVoice && window.AndroidVoice.syncAlarmSnooze) {
       window.AndroidVoice.syncAlarmSnooze(t.id, snoozeTime);
     }
@@ -4854,9 +4835,7 @@ function initVoiceClockApp() {
     if (window.AndroidVoice && window.AndroidVoice.stopAlarmService) {
       window.AndroidVoice.stopAlarmService();
     }
-    if (window.AndroidVoice && window.AndroidVoice.cancelAlarm) {
-      window.AndroidVoice.cancelAlarm(taskId);
-    }
+    // DO NOT call cancelAlarm: dismiss stops today's ring and reschedules for tomorrow!
     if (window.AndroidVoice && window.AndroidVoice.syncAlarmDismiss) {
       window.AndroidVoice.syncAlarmDismiss(taskId);
     }
@@ -4886,14 +4865,8 @@ function initVoiceClockApp() {
       } else {
         advanceTaskToNextRepeatDay(t);
       }
-      if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
-        window.AndroidVoice.scheduleAlarm(t.id, t.time.getTime(), t.title, 'task', t.title, t.voice || 'female_1', t.intervalMs || 0);
-      }
     } else if (hasDays) {
       advanceTaskToNextRepeatDay(t);
-      if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
-        window.AndroidVoice.scheduleAlarm(t.id, t.time.getTime(), t.title, 'task', t.title, t.voice || 'female_1', t.intervalMs || 0);
-      }
     } else if (hasInterval) {
       let interval = 60000;
       if (t.repeat === 'custom' && t.intervalMs) interval = t.intervalMs;
@@ -4912,14 +4885,19 @@ function initVoiceClockApp() {
       }
       t.time = nextTime;
       t.enabled = true;
-      if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
-        window.AndroidVoice.scheduleAlarm(t.id, t.time.getTime(), t.title, 'task', t.title, t.voice || 'female_1', t.intervalMs || 0);
-      }
     } else {
-      t.enabled = false;
-      if (window.AndroidVoice && window.AndroidVoice.cancelAlarm) {
-        window.AndroidVoice.cancelAlarm(t.id);
-      }
+      // Standard / daily / once task: advance to tomorrow at exact same hour:minute
+      const d = new Date(t.time);
+      const targetH = typeof t.baseH === 'number' ? t.baseH : d.getHours();
+      const targetM = typeof t.baseM === 'number' ? t.baseM : d.getMinutes();
+      const now = new Date();
+      const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, targetH, targetM, 0, 0);
+      t.time = tomorrow;
+      t.enabled = true;
+    }
+
+    if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
+      window.AndroidVoice.scheduleAlarm(t.id, t.time.getTime(), t.title, 'task', t.title, t.voice || 'female_1', t.intervalMs || 0);
     }
 
     saveTasks();
@@ -5684,42 +5662,15 @@ function initVoiceClockApp() {
       const snoozeMins = parsed.durationMinutes || defaultMins;
 
       // 1. If ringing, snooze active alarm
+      // 1. If ringing, snooze active alarm
       if (currentActiveAlarmId) {
-        const al = alarms.find(a => a.id === currentActiveAlarmId);
-        if (al) {
-          al.snoozedUntil = Date.now() + snoozeMins * 60000;
-          al.time = new Date(Date.now() + snoozeMins * 60000);
-          al.ringing = false;
-          stopAlarmAudio(al.id);
-          if (window.AndroidVoice && window.AndroidVoice.stopAlarmService) window.AndroidVoice.stopAlarmService();
-          if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
-            window.AndroidVoice.scheduleAlarm(al.id, al.time.getTime(), al.label, al.mode, al.ttsText, al.voice || 'female_1', al.intervalMs || 0);
-          }
-          saveAlarms();
-          renderAlarms();
-          currentActiveAlarmId = null;
-          alarmModal?.classList.remove('show');
-        }
+        snoozeAlarmById(currentActiveAlarmId);
         respond(isHi ? `अलार्म ${snoozeMins} मिनट के लिए स्नूज़ कर दिया गया है` : `Alarm snoozed for ${snoozeMins} minutes`, 'snoozed');
         return;
       }
 
       if (currentActiveTaskId) {
-        const t = tasks.find(x => x.id === currentActiveTaskId);
-        if (t) {
-          t.snoozedUntil = Date.now() + snoozeMins * 60000;
-          t.time = new Date(Date.now() + snoozeMins * 60000);
-          t.ringing = false;
-          stopTaskAudio(t.id);
-          if (window.AndroidVoice && window.AndroidVoice.stopAlarmService) window.AndroidVoice.stopAlarmService();
-          if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
-            window.AndroidVoice.scheduleAlarm(t.id, t.time.getTime(), t.title, 'task', t.title, t.voice, t.intervalMs || 0);
-          }
-          saveTasks();
-          renderTasks();
-          currentActiveTaskId = null;
-          taskModal?.classList.remove('show');
-        }
+        snoozeTaskById(currentActiveTaskId);
         respond(isHi ? `कार्य ${snoozeMins} मिनट के लिए स्नूज़ कर दिया गया है` : `Task snoozed for ${snoozeMins} minutes`, 'snoozed');
         return;
       }
@@ -5739,15 +5690,16 @@ function initVoiceClockApp() {
         });
         const matchAlarm = alarmMatches.find(a => a.enabled) || alarmMatches[0];
         if (matchAlarm) {
-          matchAlarm.time = new Date(new Date(matchAlarm.time).getTime() + snoozeMins * 60000);
+          const snoozeTarget = Date.now() + snoozeMins * 60000;
+          matchAlarm.snoozedUntil = snoozeTarget;
           matchAlarm.enabled = true;
-          if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
-            window.AndroidVoice.scheduleAlarm(matchAlarm.id, matchAlarm.time.getTime(), matchAlarm.label, matchAlarm.mode, matchAlarm.ttsText, matchAlarm.voice || 'female_1', matchAlarm.intervalMs || 0);
+          if (window.AndroidVoice && window.AndroidVoice.syncAlarmSnooze) {
+            window.AndroidVoice.syncAlarmSnooze(matchAlarm.id, snoozeTarget);
           }
           saveAlarms();
           renderAlarms();
-          const timeStr = formatAlarmTimeString(matchAlarm.time);
-          respond(isHi ? `अलार्म ${snoozeMins} मिनट आगे बढ़ाकर ${timeStr} बजे कर दिया गया है` : `Alarm snoozed by ${snoozeMins} minutes to ${timeStr}`, 'snoozed');
+          const timeStr = formatAlarmTimeString(snoozeTarget);
+          respond(isHi ? `अलार्म ${snoozeMins} मिनट के लिए स्नूज़ कर दिया गया है (${timeStr} तक)` : `Alarm snoozed for ${snoozeMins} minutes (until ${timeStr})`, 'snoozed');
           return;
         }
       }
@@ -5755,14 +5707,15 @@ function initVoiceClockApp() {
       // 3. Snooze upcoming alarm
       const activeAlarm = alarms.find(a => a.enabled);
       if (activeAlarm) {
-        activeAlarm.time = new Date(new Date(activeAlarm.time).getTime() + snoozeMins * 60000);
-        if (window.AndroidVoice && window.AndroidVoice.scheduleAlarm) {
-          window.AndroidVoice.scheduleAlarm(activeAlarm.id, activeAlarm.time.getTime(), activeAlarm.label, activeAlarm.mode, activeAlarm.ttsText, activeAlarm.voice || 'female_1', activeAlarm.intervalMs || 0);
+        const snoozeTarget = Date.now() + snoozeMins * 60000;
+        activeAlarm.snoozedUntil = snoozeTarget;
+        if (window.AndroidVoice && window.AndroidVoice.syncAlarmSnooze) {
+          window.AndroidVoice.syncAlarmSnooze(activeAlarm.id, snoozeTarget);
         }
         saveAlarms();
         renderAlarms();
-        const timeStr = formatAlarmTimeString(activeAlarm.time);
-        respond(isHi ? `आगामी अलार्म ${snoozeMins} मिनट आगे बढ़ाकर ${timeStr} बजे कर दिया गया है` : `Upcoming alarm snoozed by ${snoozeMins} minutes to ${timeStr}`, 'snoozed');
+        const timeStr = formatAlarmTimeString(snoozeTarget);
+        respond(isHi ? `आगामी अलार्म ${snoozeMins} मिनट के लिए स्नूज़ कर दिया गया है (${timeStr} तक)` : `Upcoming alarm snoozed for ${snoozeMins} minutes (until ${timeStr})`, 'snoozed');
         return;
       }
 
@@ -6394,10 +6347,20 @@ function initVoiceClockApp() {
               }
 
               if (localAlarm) {
-                const natTime = Number(nat.triggerTime);
-                if (!isNaN(natTime) && natTime > localAlarm.time.getTime()) {
-                  localAlarm.snoozedUntil = natTime;
+                const natSnooze = Number(nat.snoozedUntil);
+                if (!isNaN(natSnooze) && natSnooze > Date.now()) {
+                  localAlarm.snoozedUntil = natSnooze;
                   localAlarm.ringing = false;
+                  changedAlarms = true;
+                } else if (!nat.snoozedUntil && localAlarm.snoozedUntil && localAlarm.snoozedUntil <= Date.now()) {
+                  localAlarm.snoozedUntil = null;
+                  changedAlarms = true;
+                }
+                const natTrigger = Number(nat.triggerTime);
+                if (!isNaN(natTrigger) && natTrigger > Date.now() && localAlarm.time.getTime() < Date.now()) {
+                  localAlarm.time = new Date(natTrigger);
+                  localAlarm.ringing = false;
+                  localAlarm.snoozedUntil = null;
                   changedAlarms = true;
                 }
                 if (nat.voice && localAlarm.voice !== nat.voice) {
@@ -6406,11 +6369,21 @@ function initVoiceClockApp() {
                 }
               }
               if (localTask) {
-                const natTime = Number(nat.triggerTime);
-                const taskTimeMs = localTask.time instanceof Date ? localTask.time.getTime() : new Date(localTask.time).getTime();
-                if (!isNaN(natTime) && natTime > taskTimeMs) {
-                  localTask.snoozedUntil = natTime;
+                const natSnooze = Number(nat.snoozedUntil);
+                if (!isNaN(natSnooze) && natSnooze > Date.now()) {
+                  localTask.snoozedUntil = natSnooze;
                   localTask.ringing = false;
+                  changedTasks = true;
+                } else if (!nat.snoozedUntil && localTask.snoozedUntil && localTask.snoozedUntil <= Date.now()) {
+                  localTask.snoozedUntil = null;
+                  changedTasks = true;
+                }
+                const natTrigger = Number(nat.triggerTime);
+                const taskTimeMs = localTask.time instanceof Date ? localTask.time.getTime() : new Date(localTask.time).getTime();
+                if (!isNaN(natTrigger) && natTrigger > Date.now() && taskTimeMs < Date.now()) {
+                  localTask.time = new Date(natTrigger);
+                  localTask.ringing = false;
+                  localTask.snoozedUntil = null;
                   changedTasks = true;
                 }
                 if (nat.voice && localTask.voice !== nat.voice) {

@@ -15,7 +15,7 @@ import androidx.core.app.NotificationCompat;
 
 public class AlarmNotificationHelper {
 
-    public static final String CHANNEL_ID = "voice_clock_alarm_channel_v10";
+    public static final String CHANNEL_ID = "voice_clock_alarm_channel_v11";
     public static final int NOTIFICATION_ID = 1001;
 
     public static void createNotificationChannel(Context context) {
@@ -24,8 +24,8 @@ public class AlarmNotificationHelper {
                     (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
             if (manager == null) return;
 
-            // Delete obsolete cached channels from previous builds so OS registers the new alerting channel
-            for (int i = 1; i <= 9; i++) {
+            // Delete obsolete cached channels from previous builds so OS registers the new silent channel
+            for (int i = 1; i <= 10; i++) {
                 try {
                     manager.deleteNotificationChannel("voice_clock_alarm_channel_v" + i);
                 } catch (Exception ignored) {}
@@ -42,23 +42,7 @@ public class AlarmNotificationHelper {
             channel.setVibrationPattern(new long[]{ 0, 600, 400, 600, 400 });
             channel.setBypassDnd(true);
             channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
-
-            // Use system alarm sound with USAGE_ALARM so Android & OEMs strictly recognize it as an Alerting Alarm Channel
-            // This guarantees fullScreenIntent triggers over the lock screen even when screen is off
-            try {
-                Uri alarmSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
-                if (alarmSoundUri == null) {
-                    alarmSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-                }
-                if (alarmSoundUri == null) {
-                    alarmSoundUri = Settings.System.DEFAULT_ALARM_ALERT_URI;
-                }
-                AudioAttributes audioAttributes = new AudioAttributes.Builder()
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                        .setUsage(AudioAttributes.USAGE_ALARM)
-                        .build();
-                channel.setSound(alarmSoundUri, audioAttributes);
-            } catch (Exception ignored) {}
+            channel.setSound(null, null);
 
             manager.createNotificationChannel(channel);
         }
@@ -161,14 +145,6 @@ public class AlarmNotificationHelper {
         String dismissTitle = isHi ? "बंद करें" : "Dismiss";
         String snoozeTitle = isHi ? (snoozeMins + " मिनट स्नूज़") : ("Snooze " + snoozeMins + "m");
 
-        Uri alarmSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
-        if (alarmSoundUri == null) {
-            alarmSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-        }
-        if (alarmSoundUri == null) {
-            alarmSoundUri = Settings.System.DEFAULT_ALARM_ALERT_URI;
-        }
-
         return new NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
                 .setContentTitle(label)
@@ -178,7 +154,7 @@ public class AlarmNotificationHelper {
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setOngoing(true)
                 .setAutoCancel(false)
-                .setSound(alarmSoundUri)
+                .setSound(null)
                 .setVibrate(new long[]{ 0, 600, 400, 600, 400 })
                 .setContentIntent(fullScreenPendingIntent)
                 .setFullScreenIntent(fullScreenPendingIntent, true)

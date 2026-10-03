@@ -377,103 +377,7 @@ public class MainActivity extends BridgeActivity {
             ) {
                 final String selectedVoice = (voice != null && !voice.trim().isEmpty()) ? voice : "female_1";
                 AlarmPreferences.saveAlarm(MainActivity.this, alarmId, triggerAtMillis, label, type, text, selectedVoice, intervalMs);
-
-                AlarmManager alarmManager =
-                        (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-                if (alarmManager == null) return;
-
-                long physicalTrigger = triggerAtMillis;
-                if (AlarmPreferences.isManualTimeEnabled(MainActivity.this)) {
-                    physicalTrigger -= AlarmPreferences.getManualTimeOffset(MainActivity.this);
-                }
-
-                int reqCode = alarmId.hashCode();
-
-                Intent showIntent = new Intent(MainActivity.this, AlarmActivity.class);
-                showIntent.setAction("com.voiceclock.vc.ACTION_ALARM_SHOW_" + alarmId);
-                showIntent.putExtra("alarmId", alarmId);
-                showIntent.putExtra("label", label);
-                showIntent.putExtra("type", type);
-                showIntent.putExtra("text", text);
-                showIntent.putExtra("voice", selectedVoice);
-                showIntent.putExtra("mode", "task".equals(type) ? "task" : "alarm");
-                showIntent.putExtra("intervalMs", intervalMs);
-                showIntent.addFlags(
-                        Intent.FLAG_ACTIVITY_NEW_TASK
-                                | Intent.FLAG_ACTIVITY_CLEAR_TOP
-                                | Intent.FLAG_ACTIVITY_SINGLE_TOP
-                                | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
-                );
-
-                android.os.Bundle optionsBundle = null;
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                    android.app.ActivityOptions options = android.app.ActivityOptions.makeBasic();
-                    options.setPendingIntentCreatorBackgroundActivityStartMode(android.app.ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED);
-                    options.setPendingIntentBackgroundActivityStartMode(android.app.ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED);
-                    optionsBundle = options.toBundle();
-                }
-
-                PendingIntent showPi = PendingIntent.getActivity(
-                        MainActivity.this,
-                        reqCode,
-                        showIntent,
-                        PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE,
-                        optionsBundle
-                );
-
-                Intent broadcastIntent = new Intent(MainActivity.this, AlarmReceiver.class);
-                broadcastIntent.setAction("com.voiceclock.vc.ACTION_ALARM_TRIGGER_" + alarmId);
-                broadcastIntent.setPackage(getPackageName());
-                broadcastIntent.putExtra("alarmId", alarmId);
-                broadcastIntent.putExtra("label", label);
-                broadcastIntent.putExtra("type", type);
-                broadcastIntent.putExtra("text", text);
-                broadcastIntent.putExtra("voice", selectedVoice);
-                broadcastIntent.putExtra("mode", "task".equals(type) ? "task" : "alarm");
-                broadcastIntent.putExtra("intervalMs", intervalMs);
-
-                PendingIntent broadcastPi = PendingIntent.getBroadcast(
-                        MainActivity.this,
-                        reqCode,
-                        broadcastIntent,
-                        PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-                );
-
-                try {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                        AlarmManager.AlarmClockInfo clockInfo =
-                                new AlarmManager.AlarmClockInfo(physicalTrigger, showPi);
-                        alarmManager.setAlarmClock(clockInfo, broadcastPi);
-                    } else {
-                        alarmManager.setExact(
-                                AlarmManager.RTC_WAKEUP,
-                                physicalTrigger,
-                                broadcastPi
-                        );
-                    }
-                } catch (SecurityException se) {
-                    Log.w("VOICE_CLOCK", "SecurityException on setAlarmClock, trying exact/idle fallbacks", se);
-                    try {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, physicalTrigger, broadcastPi);
-                        } else {
-                            alarmManager.setExact(AlarmManager.RTC_WAKEUP, physicalTrigger, broadcastPi);
-                        }
-                    } catch (Exception e1) {
-                        Log.w("VOICE_CLOCK", "setExactAndAllowWhileIdle failed, falling back to setAndAllowWhileIdle", e1);
-                        try {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                                // setAndAllowWhileIdle does not require SCHEDULE_EXACT_ALARM and wakes device from Doze
-                                alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, physicalTrigger, broadcastPi);
-                            } else {
-                                alarmManager.set(AlarmManager.RTC_WAKEUP, physicalTrigger, broadcastPi);
-                            }
-                        } catch (Exception e2) {
-                            Log.e("VOICE_CLOCK", "Fallback to set", e2);
-                            alarmManager.set(AlarmManager.RTC_WAKEUP, physicalTrigger, broadcastPi);
-                        }
-                    }
-                }
+                AlarmPreferences.scheduleAlarmClock(MainActivity.this, alarmId, triggerAtMillis, label, type, text, selectedVoice, intervalMs);
             }
 
             @JavascriptInterface
@@ -600,14 +504,30 @@ public class MainActivity extends BridgeActivity {
 
             @JavascriptInterface
             public void syncAlarmSnooze(String alarmId, long newTriggerTime) {
+                if (alarmId == null || alarmId.trim().isEmpty()) return;
                 AlarmPreferences.snoozeAlarm(MainActivity.this, alarmId, newTriggerTime);
+                AlarmPreferences.SavedAlarm sa = AlarmPreferences.getAlarm(MainActivity.this, alarmId);
+                String label = sa != null ? sa.label : "Alarm";
+                String type = sa != null ? sa.type : "alarm";
+                String text = sa != null ? sa.text : "";
+                String voice = sa != null ? sa.voice : "female_1";
+                long intervalMs = sa != null ? sa.intervalMs : 0L;
+                AlarmPreferences.scheduleAlarmClock(MainActivity.this, alarmId, newTriggerTime, label, type, text, voice, intervalMs);
             }
 
             @JavascriptInterface
             public void syncAlarmDismiss(String alarmId) {
                 if (alarmId == null || alarmId.trim().isEmpty()) return;
-                AlarmPreferences.permanentlyDeleteAlarm(MainActivity.this, alarmId);
-                AlarmPreferences.cancelAllAlarmIntents(MainActivity.this, alarmId);
+                AlarmPreferences.recordPendingAction(MainActivity.this, alarmId, "dismiss");
+                stopAlarmVibration();
+                stopNativeTTS();
+                try {
+                    Intent stop = new Intent(MainActivity.this, AlarmService.class);
+                    stop.setAction("STOP_ALARM");
+                    stop.putExtra("alarmId", alarmId);
+                    startService(stop);
+                    stopService(stop);
+                } catch (Exception ignored) {}
             }
 
             @JavascriptInterface

@@ -2,6 +2,7 @@ package com.voiceclock.vc;
 
 import android.app.AlarmManager;
 import android.app.KeyguardManager;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -420,12 +421,6 @@ public class AlarmActivity extends AppCompatActivity {
             try { vibrator.cancel(); } catch (Exception ignored) {}
         }
 
-        if (alarmId != null) {
-            AlarmPreferences.recordPendingAction(this, alarmId, "dismiss");
-            AlarmPreferences.permanentlyDeleteAlarm(this, alarmId);
-            AlarmPreferences.cancelAllAlarmIntents(this, alarmId);
-        }
-
         // Instantly stop ringing service and cut off audio
         try {
             Intent stopIntent = new Intent(this, AlarmService.class);
@@ -434,6 +429,38 @@ public class AlarmActivity extends AppCompatActivity {
             startService(stopIntent);
             stopService(stopIntent);
         } catch (Exception ignored) {}
+
+        // Cancel system notifications for this alarm
+        try {
+            NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm != null) {
+                nm.cancel(AlarmNotificationHelper.NOTIFICATION_ID);
+                if (alarmId != null) nm.cancel(alarmId.hashCode());
+            }
+        } catch (Exception ignored) {}
+
+        if (alarmId != null) {
+            AlarmPreferences.recordPendingAction(this, alarmId, "dismiss");
+            // Standard Clock App behavior: Advance to tomorrow at exact same hour:minute (or next interval)
+            AlarmPreferences.SavedAlarm sa = AlarmPreferences.getAlarm(this, alarmId);
+            if (sa != null) {
+                java.util.Calendar cal = java.util.Calendar.getInstance();
+                cal.setTimeInMillis(sa.triggerTime);
+                int h = cal.get(java.util.Calendar.HOUR_OF_DAY);
+                int m = cal.get(java.util.Calendar.MINUTE);
+                java.util.Calendar next = java.util.Calendar.getInstance();
+                next.set(java.util.Calendar.HOUR_OF_DAY, h);
+                next.set(java.util.Calendar.MINUTE, m);
+                next.set(java.util.Calendar.SECOND, 0);
+                next.set(java.util.Calendar.MILLISECOND, 0);
+                if (next.getTimeInMillis() <= System.currentTimeMillis() + 60000L) {
+                    next.add(java.util.Calendar.DAY_OF_YEAR, 1);
+                }
+                long nextTrigger = next.getTimeInMillis();
+                AlarmPreferences.updateAlarmTrigger(this, alarmId, nextTrigger);
+                AlarmPreferences.scheduleAlarmClock(this, alarmId, nextTrigger, sa.label, sa.type, sa.text, sa.voice, sa.intervalMs);
+            }
+        }
 
         // Inform MainActivity via broadcast so in-app state updates
         try {
